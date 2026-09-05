@@ -49,6 +49,62 @@ def effective_hp(pokemon) -> int:
     return math.floor((pokemon.base_stamina + PERFECT_IV) * _cpm(pokemon.level))
 
 
+# Team GO Rocket's Shadow Pokemon do NOT use the standard player CP formula
+# above (base + 15 IV, run through the player's per-level CPM curve) --
+# they're NPC-controlled and Niantic assigns their stats directly via a
+# separate formula, keyed by the Rocket member's rank and a difficulty
+# multiplier (rCPM) tied to the *trainer's* level rather than a Pokemon
+# level. Confirmed against Pokebattler's reverse-engineered formula
+# (https://articles.pokebattler.com/2021/06/21/cracking-the-rocket-cp-formula-2021-edition/),
+# not derived from data/latest.json -- the Game Master doesn't publish this.
+ROCKET_RANK_GRUNT = 1.0
+ROCKET_RANK_LEADER = 1.05
+ROCKET_RANK_GIOVANNI = 1.15
+
+# rCPM ("Rocket CP Multiplier") scales with the trainer's own level in the
+# real game; here it's just a plain parameter every rocket_* function below
+# accepts, defaulting to 1 (full strength, as if uncapped by trainer level).
+DEFAULT_ROCKET_CPM = 1.0
+
+
+def rocket_attack_iv(base_attack: int) -> int:
+    """Shadow Pokemon get a fixed, species-dependent 'attack IV' instead of
+    the usual 0-15 -- much larger, and it scales with the species' own base
+    attack so CP stays roughly comparable across different Pokemon."""
+    return math.floor(2 / 3 * base_attack + 25)
+
+
+def rocket_effective_attack(
+    pokemon, rank: float, rCPM: float = DEFAULT_ROCKET_CPM
+) -> float:
+    return (
+        2 * (pokemon.base_attack + rocket_attack_iv(pokemon.base_attack)) * rCPM * rank
+    )
+
+
+def rocket_effective_defense(
+    pokemon, rank: float, rCPM: float = DEFAULT_ROCKET_CPM
+) -> float:
+    return 0.8 * (pokemon.base_defense + 15) * rCPM * rank  # fixed defense IV of 15
+
+
+def rocket_effective_hp(pokemon, rank: float, rCPM: float = DEFAULT_ROCKET_CPM) -> int:
+    """Floored, for battle use. rocket_cp() below uses the unfloored value,
+    per Niantic's own CP calculation."""
+    return math.floor(
+        1.1 * (pokemon.base_stamina + 9) * rCPM * rank
+    )  # fixed stamina IV of 9
+
+
+def rocket_cp(pokemon, rank: float, rCPM: float = DEFAULT_ROCKET_CPM) -> int:
+    attack = rocket_effective_attack(pokemon, rank, rCPM)
+    defense = rocket_effective_defense(pokemon, rank, rCPM)
+    stamina = (
+        1.1 * (pokemon.base_stamina + 9) * rCPM * rank
+    )  # unfloored for CP, unlike HP
+    return math.floor(0.1 * attack * math.sqrt(defense) * math.sqrt(stamina))
+
+
 def type_effectiveness(move_type: str, defender_types: list[str]) -> float:
     scalar = TYPE_CHART[move_type]
     effectiveness = 1.0

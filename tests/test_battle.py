@@ -1,17 +1,22 @@
-"""TDD 'red' phase for the 5-turn Rocket battle simulator.
+"""Tests for the 5-turn Rocket battle simulator.
 
-battle/engine.py does not exist yet -- every test below is expected to fail
-(on collection, via this import) until it's implemented. See
-/Users/emily/.claude/plans/dynamic-painting-widget.md for the full design
-and where each expected number came from.
+See /Users/emily/.claude/plans/dynamic-painting-widget.md for the full
+design and where each expected number came from.
 """
 
 import pytest
 
 from battle.engine import (
+    ROCKET_RANK_GIOVANNI,
+    ROCKET_RANK_GRUNT,
     calculate_damage,
     effective_attack,
     effective_defense,
+    rocket_attack_iv,
+    rocket_cp,
+    rocket_effective_attack,
+    rocket_effective_defense,
+    rocket_effective_hp,
     simulate_turns,
     type_effectiveness,
 )
@@ -210,3 +215,56 @@ def test_opponent_uses_charge_move_regardless_of_slot():
 @pytest.mark.parametrize("opponent", OPPONENTS, ids=lambda p: p.species)
 def test_opponents_are_always_shadow(opponent):
     assert opponent.is_shadow is True
+
+
+# --- 11. Team GO Rocket's real (non-standard) stat formula ------------------
+#
+# Rocket's Shadow Pokemon aren't leveled up like a player's -- Niantic
+# assigns their stats directly via a formula keyed by the Rocket member's
+# rank and a trainer-level-driven difficulty multiplier (rCPM), not the
+# usual base+IV/CPM(level) curve. See the comment above these functions in
+# battle/engine.py for the source. These are standalone right now -- not
+# yet wired into calculate_damage/simulate_turns, which still use the
+# generic effective_attack/effective_defense for every existing test above.
+
+
+def test_rocket_attack_iv_scales_with_base_attack():
+    persian, kangaskhan = shadow_persian(), shadow_kangaskhan()
+    assert rocket_attack_iv(persian.base_attack) == 125
+    assert rocket_attack_iv(kangaskhan.base_attack) == 145
+
+
+def test_rocket_effective_stats_at_default_rcpm():
+    persian = shadow_persian()
+
+    assert rocket_effective_attack(persian, ROCKET_RANK_GIOVANNI) == pytest.approx(
+        632.5
+    )
+    assert rocket_effective_defense(persian, ROCKET_RANK_GIOVANNI) == pytest.approx(
+        138.92
+    )
+    assert rocket_effective_hp(persian, ROCKET_RANK_GIOVANNI) == 217
+
+
+def test_rocket_cp_matches_formula():
+    persian = shadow_persian()
+    assert rocket_cp(persian, ROCKET_RANK_GIOVANNI) == 10996
+
+    kangaskhan = shadow_kangaskhan()
+    assert rocket_cp(kangaskhan, ROCKET_RANK_GRUNT) == 12765
+
+
+def test_rocket_cpm_defaults_to_one_and_is_adjustable():
+    persian = shadow_persian()
+    full_strength = rocket_effective_attack(persian, ROCKET_RANK_GIOVANNI)
+
+    # No rCPM passed -- defaults to 1, i.e. full strength.
+    assert (
+        rocket_effective_attack(persian, ROCKET_RANK_GIOVANNI, rCPM=1.0)
+        == full_strength
+    )
+
+    # Passing a different rCPM actually changes the result.
+    assert rocket_effective_attack(
+        persian, ROCKET_RANK_GIOVANNI, rCPM=0.5
+    ) == pytest.approx(full_strength / 2)
