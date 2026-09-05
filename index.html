@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BestRocketCounters</title>
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    max-width: 480px;
+    margin: 4rem auto;
+    padding: 0 1rem;
+    color: #222;
+  }
+  h1 {
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  select {
+    width: 100%;
+    font-size: 1rem;
+    padding: 0.5rem;
+  }
+  #result {
+    margin-top: 1rem;
+    font-size: 1.1rem;
+  }
+  #status {
+    color: #666;
+    font-style: italic;
+  }
+  #status.error {
+    color: #b00020;
+    font-style: normal;
+  }
+</style>
+</head>
+<body>
+  <h1>Pokemon Pokedex Lookup</h1>
+  <select id="pokemon-select" disabled>
+    <option value="" selected disabled>Loading Pokemon...</option>
+  </select>
+  <div id="result"></div>
+  <div id="status"></div>
+
+<script>
+// A handful of pokemonId values don't turn into a readable name by simply
+// title-casing and swapping underscores for spaces.
+const SPECIAL_NAMES = {
+  HAKAMO_O: "Hakamo-o",
+  HO_OH: "Ho-Oh",
+  JANGMO_O: "Jangmo-o",
+  KOMMO_O: "Kommo-o",
+  MIME_JR: "Mime Jr.",
+  MR_MIME: "Mr. Mime",
+  MR_RIME: "Mr. Rime",
+  NIDORAN_FEMALE: "Nidoran♀",
+  NIDORAN_MALE: "Nidoran♂",
+  PORYGON_Z: "Porygon-Z",
+  TAPU_BULU: "Tapu Bulu",
+  TAPU_FINI: "Tapu Fini",
+  TAPU_KOKO: "Tapu Koko",
+  TAPU_LELE: "Tapu Lele",
+  TYPE_NULL: "Type: Null",
+};
+
+const TEMPLATE_RE = /^V(\d+)_POKEMON_/;
+
+function displayName(pokemonId) {
+  if (SPECIAL_NAMES[pokemonId]) return SPECIAL_NAMES[pokemonId];
+  return pokemonId
+    .toLowerCase()
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function extractBaseFormPokemon(gameMaster) {
+  const byId = new Map();
+
+  for (const entry of gameMaster) {
+    const match = TEMPLATE_RE.exec(entry.templateId || "");
+    if (!match) continue;
+
+    const settings = entry.data && entry.data.pokemonSettings;
+    if (!settings) continue;
+
+    // Only keep the base-form template for each species (skip costumes,
+    // seasonal variants, regional forms, etc.) -- identified by having no
+    // "form" field at all.
+    if (settings.form) continue;
+
+    const dexNumber = parseInt(match[1], 10);
+    const pokemonId = settings.pokemonId;
+
+    byId.set(pokemonId, dexNumber);
+  }
+
+  return Array.from(byId, ([pokemonId, dexNumber]) => ({
+    pokemonId,
+    dexNumber,
+    displayName: displayName(pokemonId),
+  })).sort((a, b) => a.dexNumber - b.dexNumber);
+}
+
+async function init() {
+  const select = document.getElementById("pokemon-select");
+  const result = document.getElementById("result");
+  const status = document.getElementById("status");
+
+  try {
+    const response = await fetch("data/latest.json");
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const gameMaster = await response.json();
+
+    const pokemonList = extractBaseFormPokemon(gameMaster);
+
+    select.innerHTML = '<option value="" selected disabled>Select a Pokemon...</option>';
+    for (const pokemon of pokemonList) {
+      const option = document.createElement("option");
+      option.value = pokemon.dexNumber;
+      option.textContent = `#${pokemon.dexNumber} ${pokemon.displayName}`;
+      select.appendChild(option);
+    }
+    select.disabled = false;
+
+    select.addEventListener("change", () => {
+      result.textContent = `Pokedex #${select.value}`;
+    });
+
+    status.textContent = `Loaded ${pokemonList.length} Pokemon.`;
+  } catch (err) {
+    status.textContent = `Failed to load data/latest.json: ${err.message}`;
+    status.classList.add("error");
+  }
+}
+
+init();
+</script>
+</body>
+</html>
