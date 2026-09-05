@@ -4,6 +4,7 @@ These are just schema -- no battle logic lives here. That's the job of
 battle/engine.py (not implemented yet; see tests/test_battle.py for the
 expected behavior).
 """
+
 from dataclasses import dataclass
 
 

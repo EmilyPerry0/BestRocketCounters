@@ -1,235 +1,241 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BestRocketCounters</title>
-<style>
-  body {
-    font-family: system-ui, sans-serif;
-    max-width: 480px;
-    margin: 4rem auto;
-    padding: 0 1rem;
-    color: #222;
-  }
-  h1 {
-    font-size: 1.25rem;
-    margin-bottom: 1.5rem;
-  }
-  label {
-    display: block;
-    font-size: 0.9rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-  }
-  .field {
-    margin-bottom: 1rem;
-  }
-  select {
-    width: 100%;
-    font-size: 1rem;
-    padding: 0.5rem;
-  }
-  .switch-row {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-  }
-  .switch-row label {
-    margin-bottom: 0;
-  }
-  .switch {
-    position: relative;
-    display: inline-block;
-    width: 2.6rem;
-    height: 1.5rem;
-    flex-shrink: 0;
-  }
-  .switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-  .switch-track {
-    position: absolute;
-    inset: 0;
-    background: #ccc;
-    border-radius: 999px;
-    transition: background 0.15s;
-  }
-  .switch-track::before {
-    content: "";
-    position: absolute;
-    height: 1.15rem;
-    width: 1.15rem;
-    left: 0.175rem;
-    bottom: 0.175rem;
-    background: white;
-    border-radius: 50%;
-    transition: transform 0.15s;
-  }
-  .switch input:checked + .switch-track {
-    background: #b00020;
-  }
-  .switch input:checked + .switch-track::before {
-    transform: translateX(1.1rem);
-  }
-  hr {
-    border: none;
-    border-top: 1px solid #ddd;
-    margin: 1.5rem 0;
-  }
-  #result {
-    margin-top: 1.5rem;
-  }
-  #result h2 {
-    font-size: 1.1rem;
-    margin-bottom: 0;
-  }
-  #result p {
-    margin-top: 0.15rem;
-    color: #666;
-  }
-  #result h3 {
-    font-size: 0.95rem;
-    margin-bottom: 0.25rem;
-  }
-  #result ul {
-    margin-top: 0;
-    padding-left: 1.25rem;
-  }
-  #status {
-    color: #666;
-    font-style: italic;
-  }
-  #status.error {
-    color: #b00020;
-    font-style: normal;
-  }
-</style>
-</head>
-<body>
-  <h1>Team GO Rocket Lineup Lookup</h1>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BestRocketCounters</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 480px;
+        margin: 4rem auto;
+        padding: 0 1rem;
+        color: #222;
+      }
+      h1 {
+        font-size: 1.25rem;
+        margin-bottom: 1.5rem;
+      }
+      label {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+      }
+      .field {
+        margin-bottom: 1rem;
+      }
+      select {
+        width: 100%;
+        font-size: 1rem;
+        padding: 0.5rem;
+      }
+      .switch-row {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+      }
+      .switch-row label {
+        margin-bottom: 0;
+      }
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 2.6rem;
+        height: 1.5rem;
+        flex-shrink: 0;
+      }
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .switch-track {
+        position: absolute;
+        inset: 0;
+        background: #ccc;
+        border-radius: 999px;
+        transition: background 0.15s;
+      }
+      .switch-track::before {
+        content: "";
+        position: absolute;
+        height: 1.15rem;
+        width: 1.15rem;
+        left: 0.175rem;
+        bottom: 0.175rem;
+        background: white;
+        border-radius: 50%;
+        transition: transform 0.15s;
+      }
+      .switch input:checked + .switch-track {
+        background: #b00020;
+      }
+      .switch input:checked + .switch-track::before {
+        transform: translateX(1.1rem);
+      }
+      hr {
+        border: none;
+        border-top: 1px solid #ddd;
+        margin: 1.5rem 0;
+      }
+      #result {
+        margin-top: 1.5rem;
+      }
+      #result h2 {
+        font-size: 1.1rem;
+        margin-bottom: 0;
+      }
+      #result p {
+        margin-top: 0.15rem;
+        color: #666;
+      }
+      #result h3 {
+        font-size: 0.95rem;
+        margin-bottom: 0.25rem;
+      }
+      #result ul {
+        margin-top: 0;
+        padding-left: 1.25rem;
+      }
+      #status {
+        color: #666;
+        font-style: italic;
+      }
+      #status.error {
+        color: #b00020;
+        font-style: normal;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Team GO Rocket Lineup Lookup</h1>
 
-  <div class="field">
-    <label for="trainer-level">Trainer Level</label>
-    <select id="trainer-level"></select>
-  </div>
+    <div class="field">
+      <label for="trainer-level">Trainer Level</label>
+      <select id="trainer-level"></select>
+    </div>
 
-  <div class="field">
-    <label for="pokemon-level">Pokemon Level</label>
-    <select id="pokemon-level"></select>
-  </div>
+    <div class="field">
+      <label for="pokemon-level">Pokemon Level</label>
+      <select id="pokemon-level"></select>
+    </div>
 
-  <div class="field switch-row">
-    <label class="switch" for="use-megas">
-      <input type="checkbox" id="use-megas">
-      <span class="switch-track"></span>
-    </label>
-    <label for="use-megas">Use Megas</label>
-  </div>
+    <div class="field switch-row">
+      <label class="switch" for="use-megas">
+        <input type="checkbox" id="use-megas" />
+        <span class="switch-track"></span>
+      </label>
+      <label for="use-megas">Use Megas</label>
+    </div>
 
-  <hr>
+    <hr />
 
-  <select id="rocket-select" disabled>
-    <option value="" selected disabled>Loading Team GO Rocket members...</option>
-  </select>
-  <div id="result"></div>
-  <div id="status"></div>
+    <select id="rocket-select" disabled>
+      <option value="" selected disabled>
+        Loading Team GO Rocket members...
+      </option>
+    </select>
+    <div id="result"></div>
+    <div id="status"></div>
 
-<script>
-function populateLevelOptions(select, min, max, defaultValue) {
-  for (let level = min; level <= max; level++) {
-    const option = document.createElement("option");
-    option.value = level;
-    option.textContent = level;
-    if (level === defaultValue) option.selected = true;
-    select.appendChild(option);
-  }
-}
+    <script>
+      function populateLevelOptions(select, min, max, defaultValue) {
+        for (let level = min; level <= max; level++) {
+          const option = document.createElement("option");
+          option.value = level;
+          option.textContent = level;
+          if (level === defaultValue) option.selected = true;
+          select.appendChild(option);
+        }
+      }
 
-function renderSlot(label, pokemonList) {
-  if (!pokemonList || pokemonList.length === 0) return "";
+      function renderSlot(label, pokemonList) {
+        if (!pokemonList || pokemonList.length === 0) return "";
 
-  const items = pokemonList
-    .map((pokemon) => {
-      const tags = [];
-      if (pokemon.canBeShiny) tags.push("shiny possible");
-      if (pokemon.isEncounter) tags.push("catchable if you win");
-      const tagText = tags.length ? ` (${tags.join(", ")})` : "";
-      return `<li>${pokemon.name} — ${pokemon.types.join("/")}${tagText}</li>`;
-    })
-    .join("");
+        const items = pokemonList
+          .map((pokemon) => {
+            const tags = [];
+            if (pokemon.canBeShiny) tags.push("shiny possible");
+            if (pokemon.isEncounter) tags.push("catchable if you win");
+            const tagText = tags.length ? ` (${tags.join(", ")})` : "";
+            return `<li>${pokemon.name} — ${pokemon.types.join("/")}${tagText}</li>`;
+          })
+          .join("");
 
-  return `<h3>${label}</h3><ul>${items}</ul>`;
-}
+        return `<h3>${label}</h3><ul>${items}</ul>`;
+      }
 
-function renderLineup(rocket, settings) {
-  return (
-    `<h2>${rocket.name}</h2>` +
-    `<p>${rocket.title}</p>` +
-    renderSlot("First Pokemon", rocket.firstPokemon) +
-    renderSlot("Second Pokemon", rocket.secondPokemon) +
-    renderSlot("Third Pokemon", rocket.thirdPokemon) +
-    `<h3>Battle Settings</h3><ul>` +
-    `<li>Trainer Level: ${settings.trainerLevel}</li>` +
-    `<li>Pokemon Level: ${settings.pokemonLevel}</li>` +
-    `<li>Use Megas: ${settings.useMegas ? "Yes" : "No"}</li>` +
-    `</ul>`
-  );
-}
+      function renderLineup(rocket, settings) {
+        return (
+          `<h2>${rocket.name}</h2>` +
+          `<p>${rocket.title}</p>` +
+          renderSlot("First Pokemon", rocket.firstPokemon) +
+          renderSlot("Second Pokemon", rocket.secondPokemon) +
+          renderSlot("Third Pokemon", rocket.thirdPokemon) +
+          `<h3>Battle Settings</h3><ul>` +
+          `<li>Trainer Level: ${settings.trainerLevel}</li>` +
+          `<li>Pokemon Level: ${settings.pokemonLevel}</li>` +
+          `<li>Use Megas: ${settings.useMegas ? "Yes" : "No"}</li>` +
+          `</ul>`
+        );
+      }
 
-async function init() {
-  const trainerLevelSelect = document.getElementById("trainer-level");
-  const pokemonLevelSelect = document.getElementById("pokemon-level");
-  const useMegasSwitch = document.getElementById("use-megas");
-  const select = document.getElementById("rocket-select");
-  const result = document.getElementById("result");
-  const status = document.getElementById("status");
+      async function init() {
+        const trainerLevelSelect = document.getElementById("trainer-level");
+        const pokemonLevelSelect = document.getElementById("pokemon-level");
+        const useMegasSwitch = document.getElementById("use-megas");
+        const select = document.getElementById("rocket-select");
+        const result = document.getElementById("result");
+        const status = document.getElementById("status");
 
-  populateLevelOptions(trainerLevelSelect, 1, 80, 50);
-  populateLevelOptions(pokemonLevelSelect, 1, 51, 51);
+        populateLevelOptions(trainerLevelSelect, 1, 80, 50);
+        populateLevelOptions(pokemonLevelSelect, 1, 51, 51);
 
-  function currentSettings() {
-    return {
-      trainerLevel: trainerLevelSelect.value,
-      pokemonLevel: pokemonLevelSelect.value,
-      useMegas: useMegasSwitch.checked,
-    };
-  }
+        function currentSettings() {
+          return {
+            trainerLevel: trainerLevelSelect.value,
+            pokemonLevel: pokemonLevelSelect.value,
+            useMegas: useMegasSwitch.checked,
+          };
+        }
 
-  try {
-    const response = await fetch("data/rocketLineups.json");
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const rocketLineups = await response.json();
+        try {
+          const response = await fetch("data/rocketLineups.json");
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const rocketLineups = await response.json();
 
-    select.innerHTML = '<option value="" selected disabled>Select a Team GO Rocket member...</option>';
-    rocketLineups.forEach((rocket, index) => {
-      const option = document.createElement("option");
-      option.value = index;
-      option.textContent = `${rocket.name} (${rocket.title})`;
-      select.appendChild(option);
-    });
-    select.disabled = false;
+          select.innerHTML =
+            '<option value="" selected disabled>Select a Team GO Rocket member...</option>';
+          rocketLineups.forEach((rocket, index) => {
+            const option = document.createElement("option");
+            option.value = index;
+            option.textContent = `${rocket.name} (${rocket.title})`;
+            select.appendChild(option);
+          });
+          select.disabled = false;
 
-    function renderCurrentSelection() {
-      if (select.value === "") return;
-      result.innerHTML = renderLineup(rocketLineups[select.value], currentSettings());
-    }
+          function renderCurrentSelection() {
+            if (select.value === "") return;
+            result.innerHTML = renderLineup(
+              rocketLineups[select.value],
+              currentSettings(),
+            );
+          }
 
-    select.addEventListener("change", renderCurrentSelection);
-    trainerLevelSelect.addEventListener("change", renderCurrentSelection);
-    pokemonLevelSelect.addEventListener("change", renderCurrentSelection);
-    useMegasSwitch.addEventListener("change", renderCurrentSelection);
+          select.addEventListener("change", renderCurrentSelection);
+          trainerLevelSelect.addEventListener("change", renderCurrentSelection);
+          pokemonLevelSelect.addEventListener("change", renderCurrentSelection);
+          useMegasSwitch.addEventListener("change", renderCurrentSelection);
 
-    status.textContent = `Loaded ${rocketLineups.length} Team GO Rocket members.`;
-  } catch (err) {
-    status.textContent = `Failed to load data/rocketLineups.json: ${err.message}`;
-    status.classList.add("error");
-  }
-}
+          status.textContent = `Loaded ${rocketLineups.length} Team GO Rocket members.`;
+        } catch (err) {
+          status.textContent = `Failed to load data/rocketLineups.json: ${err.message}`;
+          status.classList.add("error");
+        }
+      }
 
-init();
-</script>
-</body>
+      init();
+    </script>
+  </body>
 </html>
