@@ -1,0 +1,49 @@
+# Local git hooks, run via the `pre-commit` framework.
+#
+# One-time setup:
+#   pip install pre-commit
+#   pre-commit install
+#
+# After that, these run automatically on `git commit`. To run them on
+# everything already in the repo (e.g. right after adding this file):
+#   pre-commit run --all-files
+repos:
+  # General file hygiene + syntax checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^data/
+      - id: end-of-file-fixer
+        exclude: ^data/
+      - id: check-yaml
+      - id: check-json
+        exclude: ^data/
+      - id: check-ast
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+        exclude: ^data/
+      - id: detect-private-key
+
+  # Python lint + format
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.6
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+
+  # HTML/CSS/JS formatting
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        files: \.(html|css|js)$
+        exclude: ^data/
+
+  # Secret scanning
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks

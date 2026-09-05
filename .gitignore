@@ -9,6 +9,9 @@ __pycache__/
 venv/
 env/
 
+# Node (created locally by the prettier pre-commit hook's cache)
+node_modules/
+
 # OS
 .DS_Store
 Thumbs.db
