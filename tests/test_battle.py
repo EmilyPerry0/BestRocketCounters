@@ -9,11 +9,13 @@ import pytest
 from battle.engine import (
     ROCKET_RANK_GIOVANNI,
     ROCKET_RANK_GRUNT,
+    ROCKET_RANK_LEADER,
     calculate_damage,
     effective_attack,
     effective_defense,
     rocket_attack_iv,
     rocket_cp,
+    rocket_cpm_for_trainer_level,
     rocket_effective_attack,
     rocket_effective_defense,
     rocket_effective_hp,
@@ -30,6 +32,8 @@ from battle.sample_data import (
     player_machamp,
     shadow_kangaskhan,
     shadow_persian,
+    shadow_skarmory,
+    shadow_tyranitar,
 )
 
 # --- 1. Shadow stat multipliers ---------------------------------------------
@@ -268,3 +272,34 @@ def test_rocket_cpm_defaults_to_one_and_is_adjustable():
     assert rocket_effective_attack(
         persian, ROCKET_RANK_GIOVANNI, rCPM=0.5
     ) == pytest.approx(full_strength / 2)
+
+
+# --- 12. Rocket CP formula vs. real observed values -------------------------
+#
+# General-purpose check: given a Pokemon, a trainer level (or rCPM directly,
+# when the trainer level isn't known), and a rank, does rocket_cp() match a
+# real observed CP? trainer_level=None means "not given, use the default
+# rCPM (1.0)" rather than guessing one.
+
+
+def assert_rocket_cp_matches(pokemon, rank, trainer_level, expected_cp):
+    rcpm = (
+        rocket_cpm_for_trainer_level(trainer_level)
+        if trainer_level is not None
+        else None
+    )
+    kwargs = {"rCPM": rcpm} if rcpm is not None else {}
+    assert rocket_cp(pokemon, rank, **kwargs) == expected_cp
+
+
+@pytest.mark.parametrize(
+    "pokemon_factory, rank, trainer_level, expected_cp",
+    [
+        (shadow_skarmory, ROCKET_RANK_LEADER, None, 8132),
+        (shadow_tyranitar, ROCKET_RANK_LEADER, None, 14871),
+    ],
+)
+def test_rocket_cp_against_real_observed_values(
+    pokemon_factory, rank, trainer_level, expected_cp
+):
+    assert_rocket_cp_matches(pokemon_factory(), rank, trainer_level, expected_cp)

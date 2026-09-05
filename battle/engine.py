@@ -66,6 +66,69 @@ ROCKET_RANK_GIOVANNI = 1.15
 # accepts, defaulting to 1 (full strength, as if uncapped by trainer level).
 DEFAULT_ROCKET_CPM = 1.0
 
+# The real trainer-level -> rCPM table, from the same Pokebattler source as
+# above. Only levels 8-50 are published there (levels 1-7 had no packet
+# capture data in their research, so rather than guess a value for them,
+# rocket_cpm_for_trainer_level() raises for anything outside this range).
+ROCKET_CPM_BY_TRAINER_LEVEL = {
+    8: 0.36566746,
+    9: 0.38413203,
+    10: 0.40259659,
+    11: 0.42106116,
+    12: 0.43952573,
+    13: 0.45799030,
+    14: 0.47645487,
+    15: 0.49491943,
+    16: 0.51338400,
+    17: 0.53184857,
+    18: 0.55031314,
+    19: 0.56877771,
+    20: 0.58724227,
+    21: 0.60570684,
+    22: 0.62417141,
+    23: 0.64263598,
+    24: 0.66110055,
+    25: 0.67956512,
+    26: 0.69802968,
+    27: 0.71649425,
+    28: 0.73495882,
+    29: 0.75342339,
+    30: 0.77188796,
+    31: 0.79035252,
+    32: 0.80881709,
+    33: 0.82728166,
+    34: 0.84574623,
+    35: 0.86421080,
+    36: 0.88267536,
+    37: 0.90113993,
+    38: 0.91960450,
+    39: 0.93806907,
+    40: 0.95653364,
+    41: 0.96307086,
+    42: 0.96717410,
+    43: 0.97127734,
+    44: 0.97538058,
+    45: 0.97948381,
+    46: 0.98358705,
+    47: 0.98769029,
+    48: 0.99179353,
+    49: 0.99589676,
+    50: 1.00000000,
+}
+
+
+def rocket_cpm_for_trainer_level(trainer_level: int) -> float:
+    """Look up the real rCPM for a given trainer level (8-50, the range the
+    source data covers)."""
+    try:
+        return ROCKET_CPM_BY_TRAINER_LEVEL[trainer_level]
+    except KeyError:
+        raise ValueError(
+            f"no known rCPM for trainer level {trainer_level!r} -- only "
+            f"{min(ROCKET_CPM_BY_TRAINER_LEVEL)}-{max(ROCKET_CPM_BY_TRAINER_LEVEL)} "
+            "are confirmed"
+        ) from None
+
 
 def rocket_attack_iv(base_attack: int) -> int:
     """Shadow Pokemon get a fixed, species-dependent 'attack IV' instead of

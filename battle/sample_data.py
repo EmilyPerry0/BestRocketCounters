@@ -99,6 +99,20 @@ LOCK_ON_FAST = Move(
 )
 RETURN = Move("RETURN", "NORMAL", power=25.0, duration_turns=1, energy_delta=-33)
 
+# Used only for the Rocket CP-formula verification (test 11) -- the moveset
+# doesn't matter there, just real legal ones for the species.
+STEEL_WING_FAST = Move(
+    "STEEL_WING_FAST", "STEEL", power=14.0, duration_turns=2, energy_delta=8
+)
+SKY_ATTACK = Move(
+    "SKY_ATTACK", "FLYING", power=80.0, duration_turns=4, energy_delta=-50
+)
+
+BITE_FAST = Move("BITE_FAST", "DARK", power=6.0, duration_turns=1, energy_delta=4)
+STONE_EDGE = Move(
+    "STONE_EDGE", "ROCK", power=105.0, duration_turns=5, energy_delta=-100
+)
+
 
 # --- Opponents: always Shadow (pokemonSettings in data/latest.json) --------
 def shadow_persian(
@@ -131,7 +145,40 @@ def shadow_kangaskhan() -> Pokemon:
     )
 
 
-OPPONENTS = [shadow_persian(), shadow_kangaskhan()]
+def shadow_skarmory() -> Pokemon:
+    return Pokemon(
+        species="SKARMORY",
+        level=20,
+        types=["STEEL", "FLYING"],
+        base_attack=148,
+        base_defense=226,
+        base_stamina=163,
+        fast_move=STEEL_WING_FAST,
+        charge_move=SKY_ATTACK,
+        is_shadow=True,
+    )
+
+
+def shadow_tyranitar() -> Pokemon:
+    return Pokemon(
+        species="TYRANITAR",
+        level=20,
+        types=["ROCK", "DARK"],
+        base_attack=251,
+        base_defense=207,
+        base_stamina=225,
+        fast_move=BITE_FAST,
+        charge_move=STONE_EDGE,
+        is_shadow=True,
+    )
+
+
+OPPONENTS = [
+    shadow_persian(),
+    shadow_kangaskhan(),
+    shadow_skarmory(),
+    shadow_tyranitar(),
+]
 
 
 # --- Players: never Shadow (pokemonSettings in data/latest.json) ----------
