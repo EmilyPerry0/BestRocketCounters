@@ -61,77 +61,90 @@ ROCKET_RANK_GRUNT = 1.0
 ROCKET_RANK_LEADER = 1.05
 ROCKET_RANK_GIOVANNI = 1.15
 
-# rCPM ("Rocket CP Multiplier") scales with the trainer's own level in the
-# real game; here it's just a plain parameter every rocket_* function below
-# accepts, defaulting to 1 (full strength, as if uncapped by trainer level).
-DEFAULT_ROCKET_CPM = 1.0
+# defaulting to level 80 (full strength, as if uncapped by trainer level).
+DEFAULT_TRAINER_LEVEL = 80
 
-# The article's own table entries aren't the final rCPM -- verbatim:
-# "For use in the formulas, these still have to be multiplied by the CP
-# Multiplier of 0.85374104 as found in the packet capture." Confirmed by
-# testing against two real observed CPs (Skarmory/Tyranitar): applying this
-# multiplier makes both independently imply the same trainer level, where
-# leaving it out did not.
-ROCKET_CPM_PACKET_CAPTURE_MULTIPLIER = 0.85374104
 
-# The raw (pre-multiplier) trainer-level -> rCPM table, from the same
-# Pokebattler source as above. Only levels 8-50 are published there (levels
-# 1-7 had no packet capture data in their research, so rather than guess a
-# value for them, rocket_cpm_for_trainer_level() raises for anything outside
-# this range).
 ROCKET_CPM_RAW_BY_TRAINER_LEVEL = {
-    8: 0.36566746,
-    9: 0.38413203,
-    10: 0.40259659,
-    11: 0.42106116,
-    12: 0.43952573,
-    13: 0.45799030,
-    14: 0.47645487,
-    15: 0.49491943,
-    16: 0.51338400,
-    17: 0.53184857,
-    18: 0.55031314,
-    19: 0.56877771,
-    20: 0.58724227,
-    21: 0.60570684,
-    22: 0.62417141,
-    23: 0.64263598,
-    24: 0.66110055,
-    25: 0.67956512,
-    26: 0.69802968,
-    27: 0.71649425,
-    28: 0.73495882,
-    29: 0.75342339,
-    30: 0.77188796,
-    31: 0.79035252,
-    32: 0.80881709,
-    33: 0.82728166,
-    34: 0.84574623,
-    35: 0.86421080,
-    36: 0.88267536,
-    37: 0.90113993,
-    38: 0.91960450,
-    39: 0.93806907,
-    40: 0.95653364,
-    41: 0.96307086,
-    42: 0.96717410,
-    43: 0.97127734,
-    44: 0.97538058,
-    45: 0.97948381,
-    46: 0.98358705,
-    47: 0.98769029,
-    48: 0.99179353,
-    49: 0.99589676,
-    50: 1.00000000,
+    8:0.29899919,
+    9:0.352000237,
+    10:0.399999797,
+    11:0.443999946,
+    12:0.487000316,
+    13:0.529002368,
+    14:0.569000363,
+    15:0.60800004,
+    16:0.645999432,
+    17:0.683000147,
+    18:0.719999731,
+    19:0.755000234,
+    20:0.795999765,
+    21:0.808000207,
+    22:0.820000947,
+    23:0.831999838,
+    24:0.843999565,
+    25:0.855000198,
+    26:0.866999269,
+    27:0.877999663,
+    28:0.88999939,
+    29:0.901000082,
+    30:0.911996603,
+    31:0.92299962,
+    32:0.934000373,
+    33:0.944997787,
+    34:0.954999924,
+    35:0.965000153,
+    36:0.976000071,
+    37:0.985995412,
+    38:0.997000039,
+    39:1.0069952,
+    40:1.01599848,
+    41:1.02600098,
+    42:1.03600228,
+    43:1.04599953,
+    44:1.05600107,
+    45:1.06500006,
+    46:1.07499981,
+    47:1.08400011,
+    48:1.09299958,
+    49:1.10200143,
+    50:1.11099982,
+    51:1.12,
+    52:1.12799954,
+    53:1.13699937,
+    54:1.14499974,
+    55:1.15299988,
+    56:1.16100001,
+    57:1.16799998,
+    58:1.17600024,
+    59:1.18400049,
+    60:1.19099939,
+    61:1.19899976,
+    62:1.20600212,
+    63:1.21400058,
+    64:1.22099972,
+    65:1.22899985,
+    66:1.23599958,
+    67:1.24299955,
+    68:1.25099993,
+    69:1.2579999,
+    70:1.2650001,
+    71:1.26999998,
+    72:1.27499998,
+    73:1.28000009,
+    74:1.28499985,
+    75:1.28999996,
+    76:1.29500079,
+    77:1.29999983,
+    78:1.30500031,
+    79:1.30999994,
+    80:1.31500006,
 }
 
 
 def rocket_cpm_for_trainer_level(trainer_level: int) -> float:
     """Look up the raw (pre-multiplier) rCPM for a given trainer level
-    (8-50, the range the source data covers). The rocket_* functions below
-    apply ROCKET_CPM_PACKET_CAPTURE_MULTIPLIER themselves, on whatever rCPM
-    they're given -- including the default of 1.0 -- so it's applied
-    exactly once no matter where the rCPM came from."""
+    (8-90, the range the source data covers)."""
     try:
         return ROCKET_CPM_RAW_BY_TRAINER_LEVEL[trainer_level]
     except KeyError:
@@ -141,53 +154,39 @@ def rocket_cpm_for_trainer_level(trainer_level: int) -> float:
             f"{max(ROCKET_CPM_RAW_BY_TRAINER_LEVEL)} are confirmed"
         ) from None
 
-
-def _resolved_rcpm(rCPM: float) -> float:
-    """The packet-capture multiplier applies to rCPM no matter its source --
-    a raw trainer-level lookup or the bare default of 1.0 -- so every
-    rocket_* stat function below funnels its rCPM argument through here."""
-    return rCPM * ROCKET_CPM_PACKET_CAPTURE_MULTIPLIER
-
-
 def rocket_attack_iv(base_attack: int) -> int:
     """Shadow Pokemon get a fixed, species-dependent 'attack IV' instead of
     the usual 0-15 -- much larger, and it scales with the species' own base
     attack so CP stays roughly comparable across different Pokemon."""
-    return math.floor(2 / 3 * base_attack + 25)
+    return math.floor(2/3 * base_attack + 25)
 
 
 def rocket_effective_attack(
-    pokemon, rank: float, rCPM: float = DEFAULT_ROCKET_CPM
+    pokemon, rank: float, rCPM: float
 ) -> float:
-    rcpm = _resolved_rcpm(rCPM)
     return (
-        2 * (pokemon.base_attack + rocket_attack_iv(pokemon.base_attack)) * rcpm * rank
+        (pokemon.base_attack + rocket_attack_iv(pokemon.base_attack)) * rCPM * rank
     )
 
 
 def rocket_effective_defense(
-    pokemon, rank: float, rCPM: float = DEFAULT_ROCKET_CPM
+    pokemon, rank: float, rCPM: float
 ) -> float:
-    rcpm = _resolved_rcpm(rCPM)
-    return 0.8 * (pokemon.base_defense + 15) * rcpm * rank  # fixed defense IV of 15
+    return (pokemon.base_defense + 15) * rCPM * rank  # fixed defense IV of 15
 
 
-def rocket_effective_hp(pokemon, rank: float, rCPM: float = DEFAULT_ROCKET_CPM) -> int:
+def rocket_effective_hp(pokemon, rank: float, rCPM: float) -> int:
     """Floored, for battle use. rocket_cp() below uses the unfloored value,
     per Niantic's own CP calculation."""
-    rcpm = _resolved_rcpm(rCPM)
     return math.floor(
-        1.1 * (pokemon.base_stamina + 9) * rcpm * rank
-    )  # fixed stamina IV of 9
+        0.6 * (pokemon.base_stamina + 15)) * rCPM * rank
 
 
-def rocket_cp(pokemon, rank: float, rCPM: float = DEFAULT_ROCKET_CPM) -> int:
+def rocket_cp(pokemon, rank: float, trainer_level: int = DEFAULT_TRAINER_LEVEL) -> int:
+    rCPM = rocket_cpm_for_trainer_level(trainer_level)
     attack = rocket_effective_attack(pokemon, rank, rCPM)
     defense = rocket_effective_defense(pokemon, rank, rCPM)
-    rcpm = _resolved_rcpm(rCPM)
-    stamina = (
-        1.1 * (pokemon.base_stamina + 9) * rcpm * rank
-    )  # unfloored for CP, unlike HP
+    stamina = rocket_effective_hp(pokemon, rank, rCPM)
     return math.floor(0.1 * attack * math.sqrt(defense) * math.sqrt(stamina))
 
 

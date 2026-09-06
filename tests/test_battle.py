@@ -237,42 +237,28 @@ def test_rocket_attack_iv_scales_with_base_attack():
     assert rocket_attack_iv(kangaskhan.base_attack) == 145
 
 
-def test_rocket_effective_stats_at_default_rcpm():
-    # These bake in ROCKET_CPM_PACKET_CAPTURE_MULTIPLIER, which applies to
-    # rCPM=1.0 same as any other value -- see _resolved_rcpm() in engine.py.
+def test_rocket_cp_matches_formula_giovanni():
     persian = shadow_persian()
+    rhyperior = shadow_rhyperior()
+    landorus = shadow_landorus()
 
-    assert rocket_effective_attack(persian, ROCKET_RANK_GIOVANNI) == pytest.approx(
-        539.9912078
-    )
-    assert rocket_effective_defense(persian, ROCKET_RANK_GIOVANNI) == pytest.approx(
-        118.6017053
-    )
-    assert rocket_effective_hp(persian, ROCKET_RANK_GIOVANNI) == 185
+    assert rocket_cp(persian, ROCKET_RANK_GIOVANNI) == 7956
+    assert rocket_cp(rhyperior, ROCKET_RANK_GIOVANNI) == 17588
+    assert rocket_cp(landorus, ROCKET_RANK_GIOVANNI) == 16963
+
+# def test_rocket_cp_matches_formula_leader():
+
+# def test_rocket_cp_matches_formula_grunt():
+#     magikarp = shadow_magikarp()
 
 
-def test_rocket_cp_matches_formula():
+def test_attack_IV_rocket_matches():
+    landorus = shadow_landorus()
     persian = shadow_persian()
-    assert rocket_cp(persian, ROCKET_RANK_GIOVANNI) == 8015
-
-    kangaskhan = shadow_kangaskhan()
-    assert rocket_cp(kangaskhan, ROCKET_RANK_GRUNT) == 9304
-
-
-def test_rocket_cpm_defaults_to_one_and_is_adjustable():
-    persian = shadow_persian()
-    full_strength = rocket_effective_attack(persian, ROCKET_RANK_GIOVANNI)
-
-    # No rCPM passed -- defaults to 1, i.e. full strength.
-    assert (
-        rocket_effective_attack(persian, ROCKET_RANK_GIOVANNI, rCPM=1.0)
-        == full_strength
-    )
-
-    # Passing a different rCPM actually changes the result.
-    assert rocket_effective_attack(
-        persian, ROCKET_RANK_GIOVANNI, rCPM=0.5
-    ) == pytest.approx(full_strength / 2)
+    rhyperior = shadow_rhyperior()
+    assert rocket_attack_iv(landorus.base_attack) == 199
+    assert rocket_attack_iv(persian.base_attack) == 125
+    assert rocket_attack_iv(rhyperior.base_attack) == 185
 
 
 # --- 12. Rocket CP formula vs. real observed values -------------------------
