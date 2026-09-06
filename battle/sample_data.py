@@ -137,6 +137,8 @@ HYDRO_PUMP = Move(
 
 SAND_TOMB = Move("SAND_TOMB", "GROUND", power=60.0, duration_turns=8, energy_delta=-33)
 
+BULLDOZE = Move("BULLDOZE", "GROUND", power=80.0, duration_turns=7, energy_delta=-50)
+
 
 # --- Opponents: always Shadow (pokemonSettings in data/latest.json) --------
 def shadow_persian(
@@ -267,16 +269,16 @@ def shadow_cofagrigus() -> Pokemon:
     )
 
 
-def shadow_rhydon() -> Pokemon:
+def shadow_rhyhorn() -> Pokemon:
     return Pokemon(
-        species="RHYDON",
+        species="RHYHORN",
         level=20,
         types=["GROUND", "ROCK"],
-        base_attack=222,
-        base_defense=171,
-        base_stamina=233,
+        base_attack=140,
+        base_defense=127,
+        base_stamina=190,
         fast_move=MUD_SLAP_FAST,
-        charge_move=STONE_EDGE,
+        charge_move=BULLDOZE,
         is_shadow=True,
     )
 
@@ -319,7 +321,7 @@ OPPONENTS = [
     shadow_gastly(),
     shadow_gengar(),
     shadow_cofagrigus(),
-    shadow_rhydon(),
+    shadow_rhyhorn(),
     shadow_golurk(),
     shadow_vibrava(),
 ]
