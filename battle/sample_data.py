@@ -99,18 +99,16 @@ LOCK_ON_FAST = Move(
 )
 RETURN = Move("RETURN", "NORMAL", power=25.0, duration_turns=1, energy_delta=-33)
 
-# Used only for the Rocket CP-formula verification (test 11) -- the moveset
+# Used only for the Rocket CP-formula verification (test 12) -- the moveset
 # doesn't matter there, just real legal ones for the species.
-STEEL_WING_FAST = Move(
-    "STEEL_WING_FAST", "STEEL", power=14.0, duration_turns=2, energy_delta=8
+MUD_SLAP_FAST = Move(
+    "MUD_SLAP_FAST", "GROUND", power=19.0, duration_turns=3, energy_delta=13
 )
-SKY_ATTACK = Move(
-    "SKY_ATTACK", "FLYING", power=80.0, duration_turns=4, energy_delta=-50
-)
-
-BITE_FAST = Move("BITE_FAST", "DARK", power=6.0, duration_turns=1, energy_delta=4)
 STONE_EDGE = Move(
     "STONE_EDGE", "ROCK", power=105.0, duration_turns=5, energy_delta=-100
+)
+EARTH_POWER = Move(
+    "EARTH_POWER", "GROUND", power=100.0, duration_turns=7, energy_delta=-50
 )
 
 
@@ -145,30 +143,30 @@ def shadow_kangaskhan() -> Pokemon:
     )
 
 
-def shadow_skarmory() -> Pokemon:
+def shadow_rhyperior() -> Pokemon:
     return Pokemon(
-        species="SKARMORY",
+        species="RHYPERIOR",
         level=20,
-        types=["STEEL", "FLYING"],
-        base_attack=148,
-        base_defense=226,
-        base_stamina=163,
-        fast_move=STEEL_WING_FAST,
-        charge_move=SKY_ATTACK,
+        types=["GROUND", "ROCK"],
+        base_attack=241,
+        base_defense=190,
+        base_stamina=251,
+        fast_move=MUD_SLAP_FAST,
+        charge_move=STONE_EDGE,
         is_shadow=True,
     )
 
 
-def shadow_tyranitar() -> Pokemon:
+def shadow_landorus() -> Pokemon:
     return Pokemon(
-        species="TYRANITAR",
+        species="LANDORUS",
         level=20,
-        types=["ROCK", "DARK"],
-        base_attack=251,
-        base_defense=207,
-        base_stamina=225,
-        fast_move=BITE_FAST,
-        charge_move=STONE_EDGE,
+        types=["GROUND", "FLYING"],
+        base_attack=261,
+        base_defense=182,
+        base_stamina=205,
+        fast_move=MUD_SLAP_FAST,
+        charge_move=EARTH_POWER,
         is_shadow=True,
     )
 
@@ -176,8 +174,8 @@ def shadow_tyranitar() -> Pokemon:
 OPPONENTS = [
     shadow_persian(),
     shadow_kangaskhan(),
-    shadow_skarmory(),
-    shadow_tyranitar(),
+    shadow_rhyperior(),
+    shadow_landorus(),
 ]
 
 

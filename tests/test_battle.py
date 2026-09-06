@@ -9,7 +9,6 @@ import pytest
 from battle.engine import (
     ROCKET_RANK_GIOVANNI,
     ROCKET_RANK_GRUNT,
-    ROCKET_RANK_LEADER,
     calculate_damage,
     effective_attack,
     effective_defense,
@@ -31,9 +30,9 @@ from battle.sample_data import (
     player_lucario,
     player_machamp,
     shadow_kangaskhan,
+    shadow_landorus,
     shadow_persian,
-    shadow_skarmory,
-    shadow_tyranitar,
+    shadow_rhyperior,
 )
 
 # --- 1. Shadow stat multipliers ---------------------------------------------
@@ -239,23 +238,25 @@ def test_rocket_attack_iv_scales_with_base_attack():
 
 
 def test_rocket_effective_stats_at_default_rcpm():
+    # These bake in ROCKET_CPM_PACKET_CAPTURE_MULTIPLIER, which applies to
+    # rCPM=1.0 same as any other value -- see _resolved_rcpm() in engine.py.
     persian = shadow_persian()
 
     assert rocket_effective_attack(persian, ROCKET_RANK_GIOVANNI) == pytest.approx(
-        632.5
+        539.9912078
     )
     assert rocket_effective_defense(persian, ROCKET_RANK_GIOVANNI) == pytest.approx(
-        138.92
+        118.6017053
     )
-    assert rocket_effective_hp(persian, ROCKET_RANK_GIOVANNI) == 217
+    assert rocket_effective_hp(persian, ROCKET_RANK_GIOVANNI) == 185
 
 
 def test_rocket_cp_matches_formula():
     persian = shadow_persian()
-    assert rocket_cp(persian, ROCKET_RANK_GIOVANNI) == 10996
+    assert rocket_cp(persian, ROCKET_RANK_GIOVANNI) == 8015
 
     kangaskhan = shadow_kangaskhan()
-    assert rocket_cp(kangaskhan, ROCKET_RANK_GRUNT) == 12765
+    assert rocket_cp(kangaskhan, ROCKET_RANK_GRUNT) == 9304
 
 
 def test_rocket_cpm_defaults_to_one_and_is_adjustable():
@@ -295,13 +296,10 @@ def assert_rocket_cp_matches(pokemon, rank, trainer_level, expected_cp):
 @pytest.mark.parametrize(
     "pokemon_factory, rank, trainer_level, expected_cp",
     [
-        # Trainer level wasn't given for these two -- 47 is the best fit
-        # found by solving backwards from the observed CPs (both Pokemon
-        # independently imply the same level once the packet-capture
-        # multiplier is applied; see engine.py), not a confirmed value.
-        # Still off by ~0.2%, so this is left failing rather than fudged.
-        (shadow_skarmory, ROCKET_RANK_LEADER, 47, 8132),
-        (shadow_tyranitar, ROCKET_RANK_LEADER, 47, 14871),
+        # A Giovanni fight: Giovanni rank, rCPM=1.0 (trainer_level=None).
+        (shadow_persian, ROCKET_RANK_GIOVANNI, None, 7956),
+        (shadow_rhyperior, ROCKET_RANK_GIOVANNI, None, 17588),
+        (shadow_landorus, ROCKET_RANK_GIOVANNI, None, 16963),
     ],
 )
 def test_rocket_cp_against_real_observed_values(

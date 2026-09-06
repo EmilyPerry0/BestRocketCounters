@@ -127,18 +127,26 @@ ROCKET_CPM_RAW_BY_TRAINER_LEVEL = {
 
 
 def rocket_cpm_for_trainer_level(trainer_level: int) -> float:
-    """Look up the real rCPM for a given trainer level (8-50, the range the
-    source data covers), with the packet-capture multiplier already
-    applied."""
+    """Look up the raw (pre-multiplier) rCPM for a given trainer level
+    (8-50, the range the source data covers). The rocket_* functions below
+    apply ROCKET_CPM_PACKET_CAPTURE_MULTIPLIER themselves, on whatever rCPM
+    they're given -- including the default of 1.0 -- so it's applied
+    exactly once no matter where the rCPM came from."""
     try:
-        raw = ROCKET_CPM_RAW_BY_TRAINER_LEVEL[trainer_level]
+        return ROCKET_CPM_RAW_BY_TRAINER_LEVEL[trainer_level]
     except KeyError:
         raise ValueError(
             f"no known rCPM for trainer level {trainer_level!r} -- only "
             f"{min(ROCKET_CPM_RAW_BY_TRAINER_LEVEL)}-"
             f"{max(ROCKET_CPM_RAW_BY_TRAINER_LEVEL)} are confirmed"
         ) from None
-    return raw * ROCKET_CPM_PACKET_CAPTURE_MULTIPLIER
+
+
+def _resolved_rcpm(rCPM: float) -> float:
+    """The packet-capture multiplier applies to rCPM no matter its source --
+    a raw trainer-level lookup or the bare default of 1.0 -- so every
+    rocket_* stat function below funnels its rCPM argument through here."""
+    return rCPM * ROCKET_CPM_PACKET_CAPTURE_MULTIPLIER
 
 
 def rocket_attack_iv(base_attack: int) -> int:
@@ -151,30 +159,34 @@ def rocket_attack_iv(base_attack: int) -> int:
 def rocket_effective_attack(
     pokemon, rank: float, rCPM: float = DEFAULT_ROCKET_CPM
 ) -> float:
+    rcpm = _resolved_rcpm(rCPM)
     return (
-        2 * (pokemon.base_attack + rocket_attack_iv(pokemon.base_attack)) * rCPM * rank
+        2 * (pokemon.base_attack + rocket_attack_iv(pokemon.base_attack)) * rcpm * rank
     )
 
 
 def rocket_effective_defense(
     pokemon, rank: float, rCPM: float = DEFAULT_ROCKET_CPM
 ) -> float:
-    return 0.8 * (pokemon.base_defense + 15) * rCPM * rank  # fixed defense IV of 15
+    rcpm = _resolved_rcpm(rCPM)
+    return 0.8 * (pokemon.base_defense + 15) * rcpm * rank  # fixed defense IV of 15
 
 
 def rocket_effective_hp(pokemon, rank: float, rCPM: float = DEFAULT_ROCKET_CPM) -> int:
     """Floored, for battle use. rocket_cp() below uses the unfloored value,
     per Niantic's own CP calculation."""
+    rcpm = _resolved_rcpm(rCPM)
     return math.floor(
-        1.1 * (pokemon.base_stamina + 9) * rCPM * rank
+        1.1 * (pokemon.base_stamina + 9) * rcpm * rank
     )  # fixed stamina IV of 9
 
 
 def rocket_cp(pokemon, rank: float, rCPM: float = DEFAULT_ROCKET_CPM) -> int:
     attack = rocket_effective_attack(pokemon, rank, rCPM)
     defense = rocket_effective_defense(pokemon, rank, rCPM)
+    rcpm = _resolved_rcpm(rCPM)
     stamina = (
-        1.1 * (pokemon.base_stamina + 9) * rCPM * rank
+        1.1 * (pokemon.base_stamina + 9) * rcpm * rank
     )  # unfloored for CP, unlike HP
     return math.floor(0.1 * attack * math.sqrt(defense) * math.sqrt(stamina))
 
