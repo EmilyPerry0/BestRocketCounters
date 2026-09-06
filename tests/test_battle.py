@@ -295,8 +295,13 @@ def assert_rocket_cp_matches(pokemon, rank, trainer_level, expected_cp):
 @pytest.mark.parametrize(
     "pokemon_factory, rank, trainer_level, expected_cp",
     [
-        (shadow_skarmory, ROCKET_RANK_LEADER, None, 8132),
-        (shadow_tyranitar, ROCKET_RANK_LEADER, None, 14871),
+        # Trainer level wasn't given for these two -- 47 is the best fit
+        # found by solving backwards from the observed CPs (both Pokemon
+        # independently imply the same level once the packet-capture
+        # multiplier is applied; see engine.py), not a confirmed value.
+        # Still off by ~0.2%, so this is left failing rather than fudged.
+        (shadow_skarmory, ROCKET_RANK_LEADER, 47, 8132),
+        (shadow_tyranitar, ROCKET_RANK_LEADER, 47, 14871),
     ],
 )
 def test_rocket_cp_against_real_observed_values(

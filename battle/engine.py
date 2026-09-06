@@ -66,11 +66,20 @@ ROCKET_RANK_GIOVANNI = 1.15
 # accepts, defaulting to 1 (full strength, as if uncapped by trainer level).
 DEFAULT_ROCKET_CPM = 1.0
 
-# The real trainer-level -> rCPM table, from the same Pokebattler source as
-# above. Only levels 8-50 are published there (levels 1-7 had no packet
-# capture data in their research, so rather than guess a value for them,
-# rocket_cpm_for_trainer_level() raises for anything outside this range).
-ROCKET_CPM_BY_TRAINER_LEVEL = {
+# The article's own table entries aren't the final rCPM -- verbatim:
+# "For use in the formulas, these still have to be multiplied by the CP
+# Multiplier of 0.85374104 as found in the packet capture." Confirmed by
+# testing against two real observed CPs (Skarmory/Tyranitar): applying this
+# multiplier makes both independently imply the same trainer level, where
+# leaving it out did not.
+ROCKET_CPM_PACKET_CAPTURE_MULTIPLIER = 0.85374104
+
+# The raw (pre-multiplier) trainer-level -> rCPM table, from the same
+# Pokebattler source as above. Only levels 8-50 are published there (levels
+# 1-7 had no packet capture data in their research, so rather than guess a
+# value for them, rocket_cpm_for_trainer_level() raises for anything outside
+# this range).
+ROCKET_CPM_RAW_BY_TRAINER_LEVEL = {
     8: 0.36566746,
     9: 0.38413203,
     10: 0.40259659,
@@ -119,15 +128,17 @@ ROCKET_CPM_BY_TRAINER_LEVEL = {
 
 def rocket_cpm_for_trainer_level(trainer_level: int) -> float:
     """Look up the real rCPM for a given trainer level (8-50, the range the
-    source data covers)."""
+    source data covers), with the packet-capture multiplier already
+    applied."""
     try:
-        return ROCKET_CPM_BY_TRAINER_LEVEL[trainer_level]
+        raw = ROCKET_CPM_RAW_BY_TRAINER_LEVEL[trainer_level]
     except KeyError:
         raise ValueError(
             f"no known rCPM for trainer level {trainer_level!r} -- only "
-            f"{min(ROCKET_CPM_BY_TRAINER_LEVEL)}-{max(ROCKET_CPM_BY_TRAINER_LEVEL)} "
-            "are confirmed"
+            f"{min(ROCKET_CPM_RAW_BY_TRAINER_LEVEL)}-"
+            f"{max(ROCKET_CPM_RAW_BY_TRAINER_LEVEL)} are confirmed"
         ) from None
+    return raw * ROCKET_CPM_PACKET_CAPTURE_MULTIPLIER
 
 
 def rocket_attack_iv(base_attack: int) -> int:
