@@ -111,6 +111,32 @@ EARTH_POWER = Move(
     "EARTH_POWER", "GROUND", power=100.0, duration_turns=7, energy_delta=-50
 )
 
+ASTONISH_FAST = Move(
+    "ASTONISH_FAST", "GHOST", power=7.0, duration_turns=2, energy_delta=13
+)
+SHADOW_CLAW_FAST = Move(
+    "SHADOW_CLAW_FAST", "GHOST", power=6.0, duration_turns=1, energy_delta=4
+)
+SHADOW_BALL = Move(
+    "SHADOW_BALL", "GHOST", power=100.0, duration_turns=6, energy_delta=-50
+)
+
+# Magikarp's real moveset -- Splash deals no damage, and Struggle (its only
+# legal charge move) doesn't actually use energy in the real game, unlike
+# every other charge move here. energy_delta=0 is the closest fit within
+# our model (a move that's always "affordable").
+SPLASH_FAST = Move("SPLASH_FAST", "WATER", power=0.0, duration_turns=3, energy_delta=17)
+STRUGGLE = Move("STRUGGLE", "NORMAL", power=35.0, duration_turns=4, energy_delta=0)
+
+WATERFALL_FAST = Move(
+    "WATERFALL_FAST", "WATER", power=13.0, duration_turns=2, energy_delta=7
+)
+HYDRO_PUMP = Move(
+    "HYDRO_PUMP", "WATER", power=135.0, duration_turns=7, energy_delta=-100
+)
+
+SAND_TOMB = Move("SAND_TOMB", "GROUND", power=60.0, duration_turns=8, energy_delta=-33)
+
 
 # --- Opponents: always Shadow (pokemonSettings in data/latest.json) --------
 def shadow_persian(
@@ -171,11 +197,131 @@ def shadow_landorus() -> Pokemon:
     )
 
 
+def shadow_magikarp() -> Pokemon:
+    return Pokemon(
+        species="MAGIKARP",
+        level=20,
+        types=["WATER"],
+        base_attack=29,
+        base_defense=85,
+        base_stamina=85,
+        fast_move=SPLASH_FAST,
+        charge_move=STRUGGLE,
+        is_shadow=True,
+    )
+
+
+def shadow_gyarados() -> Pokemon:
+    return Pokemon(
+        species="GYARADOS",
+        level=20,
+        types=["WATER", "FLYING"],
+        base_attack=237,
+        base_defense=186,
+        base_stamina=216,
+        fast_move=WATERFALL_FAST,
+        charge_move=HYDRO_PUMP,
+        is_shadow=True,
+    )
+
+
+def shadow_gastly() -> Pokemon:
+    return Pokemon(
+        species="GASTLY",
+        level=20,
+        types=["GHOST", "POISON"],
+        base_attack=186,
+        base_defense=67,
+        base_stamina=102,
+        fast_move=ASTONISH_FAST,
+        charge_move=SHADOW_BALL,
+        is_shadow=True,
+    )
+
+
+def shadow_gengar() -> Pokemon:
+    return Pokemon(
+        species="GENGAR",
+        level=20,
+        types=["GHOST", "POISON"],
+        base_attack=261,
+        base_defense=149,
+        base_stamina=155,
+        fast_move=SHADOW_CLAW_FAST,
+        charge_move=SHADOW_BALL,
+        is_shadow=True,
+    )
+
+
+def shadow_cofagrigus() -> Pokemon:
+    return Pokemon(
+        species="COFAGRIGUS",
+        level=20,
+        types=["GHOST"],
+        base_attack=163,
+        base_defense=237,
+        base_stamina=151,
+        fast_move=ASTONISH_FAST,
+        charge_move=SHADOW_BALL,
+        is_shadow=True,
+    )
+
+
+def shadow_rhydon() -> Pokemon:
+    return Pokemon(
+        species="RHYDON",
+        level=20,
+        types=["GROUND", "ROCK"],
+        base_attack=222,
+        base_defense=171,
+        base_stamina=233,
+        fast_move=MUD_SLAP_FAST,
+        charge_move=STONE_EDGE,
+        is_shadow=True,
+    )
+
+
+def shadow_golurk() -> Pokemon:
+    return Pokemon(
+        species="GOLURK",
+        level=20,
+        types=["GROUND", "GHOST"],
+        base_attack=222,
+        base_defense=154,
+        base_stamina=205,
+        fast_move=ASTONISH_FAST,
+        charge_move=EARTH_POWER,
+        is_shadow=True,
+    )
+
+
+def shadow_vibrava() -> Pokemon:
+    return Pokemon(
+        species="VIBRAVA",
+        level=20,
+        types=["GROUND", "DRAGON"],
+        base_attack=134,
+        base_defense=99,
+        base_stamina=137,
+        fast_move=MUD_SHOT_FAST,
+        charge_move=SAND_TOMB,
+        is_shadow=True,
+    )
+
+
 OPPONENTS = [
     shadow_persian(),
     shadow_kangaskhan(),
     shadow_rhyperior(),
     shadow_landorus(),
+    shadow_magikarp(),
+    shadow_gyarados(),
+    shadow_gastly(),
+    shadow_gengar(),
+    shadow_cofagrigus(),
+    shadow_rhydon(),
+    shadow_golurk(),
+    shadow_vibrava(),
 ]
 
 

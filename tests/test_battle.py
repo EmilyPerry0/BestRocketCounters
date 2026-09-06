@@ -8,16 +8,12 @@ import pytest
 
 from battle.engine import (
     ROCKET_RANK_GIOVANNI,
-    ROCKET_RANK_GRUNT,
     calculate_damage,
     effective_attack,
     effective_defense,
     rocket_attack_iv,
     rocket_cp,
     rocket_cpm_for_trainer_level,
-    rocket_effective_attack,
-    rocket_effective_defense,
-    rocket_effective_hp,
     simulate_turns,
     type_effectiveness,
 )
@@ -245,6 +241,7 @@ def test_rocket_cp_matches_formula_giovanni():
     assert rocket_cp(persian, ROCKET_RANK_GIOVANNI) == 7956
     assert rocket_cp(rhyperior, ROCKET_RANK_GIOVANNI) == 17588
     assert rocket_cp(landorus, ROCKET_RANK_GIOVANNI) == 16963
+
 
 # def test_rocket_cp_matches_formula_leader():
 
