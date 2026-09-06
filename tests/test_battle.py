@@ -8,6 +8,7 @@ import pytest
 
 from battle.engine import (
     ROCKET_RANK_GIOVANNI,
+    ROCKET_RANK_GRUNT,
     calculate_damage,
     effective_attack,
     effective_defense,
@@ -29,6 +30,14 @@ from battle.sample_data import (
     shadow_landorus,
     shadow_persian,
     shadow_rhyperior,
+    shadow_magikarp,
+    shadow_gyarados,
+    shadow_gastly,
+    shadow_gengar,
+    shadow_cofagrigus,
+    shadow_rhyhorn,
+    shadow_golurk,
+    shadow_vibrava,
 )
 
 # --- 1. Shadow stat multipliers ---------------------------------------------
@@ -245,9 +254,25 @@ def test_rocket_cp_matches_formula_giovanni():
 
 # def test_rocket_cp_matches_formula_leader():
 
-# def test_rocket_cp_matches_formula_grunt():
-#     magikarp = shadow_magikarp()
+def test_rocket_cp_matches_formula_grunt():
+    magikarp = shadow_magikarp()
+    gyrados = shadow_gyarados()
+    gastly = shadow_gastly()
+    gengar = shadow_gengar()
+    cofagrigus = shadow_cofagrigus()
+    rhyhorn = shadow_rhyhorn()
+    golurk = shadow_golurk()
+    vibrava = shadow_vibrava()
 
+    assert rocket_cp(magikarp, ROCKET_RANK_GRUNT, 78) == 962
+    assert rocket_cp(gyrados, ROCKET_RANK_GRUNT, 78) == 11912
+    assert rocket_cp(gastly, ROCKET_RANK_GRUNT, 58) == 3510
+    assert rocket_cp(gengar, ROCKET_RANK_GRUNT, 58) == 8228
+    assert rocket_cp(cofagrigus, ROCKET_RANK_GRUNT, 58) == 6465
+    assert rocket_cp(rhyhorn, ROCKET_RANK_GRUNT, 58) == 4715
+    assert rocket_cp(vibrava, ROCKET_RANK_GRUNT, 58) == 3493
+    assert rocket_cp(golurk, ROCKET_RANK_GRUNT, 58) == 8159
+ 
 
 def test_attack_IV_rocket_matches():
     landorus = shadow_landorus()
