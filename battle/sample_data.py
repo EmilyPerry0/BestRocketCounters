@@ -24,10 +24,12 @@ SHADOW_DEFENSE_BONUS_MULTIPLIER = 0.8333
 # 0.7903, the well-known real level-40 CP multiplier. Sliced here to just
 # the levels the sample Pokemon below use, plus a couple of neighbors.
 CPM_TABLE = {
+    1: 0.094,
     15: 0.51739395,
     20: 0.5974,
     25: 0.667934,
     40: 0.7903,
+    51: 0.8453,
 }
 
 # --- typeEffective.attackScalar (data/latest.json) --------------------------
@@ -49,6 +51,8 @@ TYPE_CHART = {
     "DARK":     [1.0, 0.625, 1.0, 1.0, 1.0, 1.0, 1.0, 1.6, 1.0, 1.0, 1.0, 1.0, 1.0, 1.6, 1.0, 1.0, 0.625, 0.625],
     "STEEL":    [1.0, 1.0, 1.0, 1.0, 1.0, 1.6, 1.0, 1.0, 0.625, 0.625, 0.625, 1.0, 0.625, 1.0, 1.6, 1.0, 1.0, 1.6],
     "FIRE":     [1.0, 1.0, 1.0, 1.0, 1.0, 0.625, 1.6, 1.0, 1.6, 0.625, 0.625, 1.6, 1.0, 1.0, 1.6, 0.625, 1.0, 1.0],
+    "PSYCHIC":  [1.0, 1.6, 1.0, 1.6, 1.0, 1.0, 1.0, 1.0, 0.625, 1.0, 1.0, 1.0, 1.0, 0.625, 1.0, 1.0, 0.390625, 1.0],
+    "POISON":   [1.0, 1.0, 1.0, 0.625, 0.625, 0.625, 1.0, 0.625, 0.390625, 1.0, 1.0, 1.6, 1.0, 1.0, 1.0, 1.0, 1.0, 1.6],
 }
 # fmt: on
 # NOTE: only the attacking types used by the sample data / tests below are
@@ -138,6 +142,15 @@ HYDRO_PUMP = Move(
 SAND_TOMB = Move("SAND_TOMB", "GROUND", power=60.0, duration_turns=8, energy_delta=-33)
 
 BULLDOZE = Move("BULLDOZE", "GROUND", power=80.0, duration_turns=7, energy_delta=-50)
+
+PSYCHO_CUT_FAST = Move(
+    "PSYCHO_CUT_FAST", "PSYCHIC", power=4.0, duration_turns=1, energy_delta=7
+)
+PSYCHIC = Move("PSYCHIC", "PSYCHIC", power=95.0, duration_turns=6, energy_delta=-50)
+
+POISON_STING_FAST = Move(
+    "POISON_STING_FAST", "POISON", power=4.0, duration_turns=1, energy_delta=6
+)
 
 
 # --- Opponents: always Shadow (pokemonSettings in data/latest.json) --------
@@ -311,6 +324,40 @@ def shadow_vibrava() -> Pokemon:
     )
 
 
+def shadow_weedle() -> Pokemon:
+    """A Grunt's Weedle -- an intentionally trivial opponent for the
+    Mega Mewtwo win-condition test below."""
+    return Pokemon(
+        species="WEEDLE",
+        level=20,
+        types=["BUG", "POISON"],
+        base_attack=63,
+        base_defense=50,
+        base_stamina=120,
+        fast_move=POISON_STING_FAST,
+        charge_move=STRUGGLE,
+        is_shadow=True,
+    )
+
+
+def shadow_mewtwo() -> Pokemon:
+    """Base-form Mewtwo (Shadow and Mega are mutually exclusive in the real
+    game, so this is the un-boosted 300/182/214 spread) -- used as the
+    "max difficulty" opponent for the level-1 Weedle loss-condition test
+    below."""
+    return Pokemon(
+        species="MEWTWO",
+        level=20,
+        types=["PSYCHIC"],
+        base_attack=300,
+        base_defense=182,
+        base_stamina=214,
+        fast_move=PSYCHO_CUT_FAST,
+        charge_move=PSYCHIC,
+        is_shadow=True,
+    )
+
+
 OPPONENTS = [
     shadow_persian(),
     shadow_kangaskhan(),
@@ -324,6 +371,8 @@ OPPONENTS = [
     shadow_rhyhorn(),
     shadow_golurk(),
     shadow_vibrava(),
+    shadow_weedle(),
+    shadow_mewtwo(),
 ]
 
 
@@ -387,4 +436,45 @@ def player_machamp() -> Pokemon:
     )
 
 
-PLAYERS = [player_lucario(), player_excadrill(), player_machamp()]
+def player_mega_mewtwo_y() -> Pokemon:
+    """Mega Mewtwo Y -- modeled the same way the game itself does: the Mega
+    form's boosted stats (tempEvoOverrides, TEMP_EVOLUTION_MEGA_Y) stand in
+    directly as base_attack/base_defense/base_stamina, run through the same
+    CPM formula as any other player Pokemon. Base Mewtwo is 300/182/214;
+    Mega Y is 413/223/228."""
+    return Pokemon(
+        species="MEWTWO",
+        level=51,
+        types=["PSYCHIC"],
+        base_attack=413,
+        base_defense=223,
+        base_stamina=228,
+        fast_move=PSYCHO_CUT_FAST,
+        charge_move=PSYCHIC,
+        is_shadow=False,
+    )
+
+
+def player_weedle_level_1() -> Pokemon:
+    """An intentionally trivial player Pokemon for the shadow-Mewtwo
+    loss-condition test below."""
+    return Pokemon(
+        species="WEEDLE",
+        level=1,
+        types=["BUG", "POISON"],
+        base_attack=63,
+        base_defense=50,
+        base_stamina=120,
+        fast_move=POISON_STING_FAST,
+        charge_move=STRUGGLE,
+        is_shadow=False,
+    )
+
+
+PLAYERS = [
+    player_lucario(),
+    player_excadrill(),
+    player_machamp(),
+    player_mega_mewtwo_y(),
+    player_weedle_level_1(),
+]

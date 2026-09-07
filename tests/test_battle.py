@@ -4,6 +4,8 @@ See /Users/emily/.claude/plans/dynamic-painting-widget.md for the full
 design and where each expected number came from.
 """
 
+import math
+
 import pytest
 
 from battle.engine import (
@@ -12,9 +14,13 @@ from battle.engine import (
     calculate_damage,
     effective_attack,
     effective_defense,
+    effective_hp,
     rocket_attack_iv,
     rocket_cp,
     rocket_cpm_for_trainer_level,
+    rocket_effective_attack,
+    rocket_effective_defense,
+    rocket_effective_hp,
     simulate_turns,
     type_effectiveness,
 )
@@ -22,22 +28,27 @@ from battle.sample_data import (
     LOCK_ON_FAST,
     OPPONENTS,
     RETURN,
+    SAME_TYPE_ATTACK_BONUS_MULTIPLIER,
     non_shadow_persian,
     player_excadrill,
     player_lucario,
     player_machamp,
-    shadow_kangaskhan,
-    shadow_landorus,
-    shadow_persian,
-    shadow_rhyperior,
-    shadow_magikarp,
-    shadow_gyarados,
+    player_mega_mewtwo_y,
+    player_weedle_level_1,
+    shadow_cofagrigus,
     shadow_gastly,
     shadow_gengar,
-    shadow_cofagrigus,
-    shadow_rhyhorn,
     shadow_golurk,
+    shadow_gyarados,
+    shadow_kangaskhan,
+    shadow_landorus,
+    shadow_magikarp,
+    shadow_mewtwo,
+    shadow_persian,
+    shadow_rhyhorn,
+    shadow_rhyperior,
     shadow_vibrava,
+    shadow_weedle,
 )
 
 # --- 1. Shadow stat multipliers ---------------------------------------------
@@ -254,6 +265,7 @@ def test_rocket_cp_matches_formula_giovanni():
 
 # def test_rocket_cp_matches_formula_leader():
 
+
 def test_rocket_cp_matches_formula_grunt():
     magikarp = shadow_magikarp()
     gyrados = shadow_gyarados()
@@ -272,7 +284,7 @@ def test_rocket_cp_matches_formula_grunt():
     assert rocket_cp(rhyhorn, ROCKET_RANK_GRUNT, 58) == 4715
     assert rocket_cp(vibrava, ROCKET_RANK_GRUNT, 58) == 3493
     assert rocket_cp(golurk, ROCKET_RANK_GRUNT, 58) == 8159
- 
+
 
 def test_attack_IV_rocket_matches():
     landorus = shadow_landorus()
@@ -314,3 +326,85 @@ def test_rocket_cp_against_real_observed_values(
     pokemon_factory, rank, trainer_level, expected_cp
 ):
     assert_rocket_cp_matches(pokemon_factory(), rank, trainer_level, expected_cp)
+
+
+# --- 13. A wildly lopsided fight: does the player actually win? -------------
+#
+# calculate_damage() always pulls both sides' stats via effective_attack/
+# effective_defense, which is right for two player Pokemon but wrong for a
+# Rocket opponent (whose stats come from rocket_effective_attack/defense,
+# keyed by rank + trainer level, not a Pokemon level). So this hit-damage
+# helper takes already-resolved atk/def numbers directly instead, letting
+# each side use whichever formula actually applies to it.
+
+
+def _hit_damage(power, move_type, attacker_types, atk, defense, defender_types):
+    stab = SAME_TYPE_ATTACK_BONUS_MULTIPLIER if move_type in attacker_types else 1.0
+    effectiveness = type_effectiveness(move_type, defender_types)
+    return math.floor(0.5 * power * (atk / defense) * stab * effectiveness) + 1
+
+
+def test_mega_mewtwo_level_51_beats_grunt_shadow_weedle_at_trainer_level_70():
+    mewtwo = player_mega_mewtwo_y()
+    weedle = shadow_weedle()
+    rcpm = rocket_cpm_for_trainer_level(70)
+
+    mewtwo_hp = effective_hp(mewtwo)
+    weedle_hp = rocket_effective_hp(weedle, ROCKET_RANK_GRUNT, rcpm)
+
+    mewtwo_hit = _hit_damage(
+        mewtwo.fast_move.power,
+        mewtwo.fast_move.type,
+        mewtwo.types,
+        effective_attack(mewtwo),
+        rocket_effective_defense(weedle, ROCKET_RANK_GRUNT, rcpm),
+        weedle.types,
+    )
+    weedle_hit = _hit_damage(
+        weedle.fast_move.power,
+        weedle.fast_move.type,
+        weedle.types,
+        rocket_effective_attack(weedle, ROCKET_RANK_GRUNT, rcpm),
+        effective_defense(mewtwo),
+        mewtwo.types,
+    )
+
+    # Both sides just spam their fast move -- how many hits would it take
+    # each side to knock out the other?
+    hits_to_ko_weedle = math.ceil(weedle_hp / mewtwo_hit)
+    hits_to_ko_mewtwo = math.ceil(mewtwo_hp / weedle_hit)
+
+    player_wins = hits_to_ko_weedle < hits_to_ko_mewtwo
+    assert player_wins is True
+
+
+def test_level_1_weedle_loses_to_shadow_mewtwo_at_max_difficulty():
+    weedle = player_weedle_level_1()
+    mewtwo = shadow_mewtwo()
+    rcpm = rocket_cpm_for_trainer_level(80)  # max trainer level -> max rCPM
+
+    weedle_hp = effective_hp(weedle)
+    mewtwo_hp = rocket_effective_hp(mewtwo, ROCKET_RANK_GRUNT, rcpm)
+
+    weedle_hit = _hit_damage(
+        weedle.fast_move.power,
+        weedle.fast_move.type,
+        weedle.types,
+        effective_attack(weedle),
+        rocket_effective_defense(mewtwo, ROCKET_RANK_GRUNT, rcpm),
+        mewtwo.types,
+    )
+    mewtwo_hit = _hit_damage(
+        mewtwo.fast_move.power,
+        mewtwo.fast_move.type,
+        mewtwo.types,
+        rocket_effective_attack(mewtwo, ROCKET_RANK_GRUNT, rcpm),
+        effective_defense(weedle),
+        weedle.types,
+    )
+
+    hits_to_ko_mewtwo = math.ceil(mewtwo_hp / weedle_hit)
+    hits_to_ko_weedle = math.ceil(weedle_hp / mewtwo_hit)
+
+    player_wins = hits_to_ko_mewtwo < hits_to_ko_weedle
+    assert player_wins is False
