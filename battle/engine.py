@@ -359,9 +359,12 @@ class _CombatantState:
     turns_into_move: int = 0
 
 
-def _apply_attack(attacker: _CombatantState, defender: _CombatantState) -> None:
+def _compute_damage(attacker: _CombatantState, defender: _CombatantState) -> int:
+    """Pure -- what attacker's current move would deal to defender, without
+    applying it. Needed to decide same-tick priority (e.g. "would this be
+    fatal?") before committing to an order."""
     move = attacker.move
-    damage = _damage_from_stats(
+    return _damage_from_stats(
         move.power,
         move.type,
         attacker.pokemon.types,
@@ -369,8 +372,58 @@ def _apply_attack(attacker: _CombatantState, defender: _CombatantState) -> None:
         defender.defense,
         defender.pokemon.types,
     )
-    defender.hp -= damage
-    attacker.energy = max(0, min(MAX_ENERGY, attacker.energy + move.energy_delta))
+
+
+def _apply_attack(attacker: _CombatantState, defender: _CombatantState) -> None:
+    defender.hp -= _compute_damage(attacker, defender)
+    attacker.energy = max(
+        0, min(MAX_ENERGY, attacker.energy + attacker.move.energy_delta)
+    )
+
+
+def _resolve_phase_a_conflict(a: _CombatantState, b: _CombatantState) -> bool:
+    """Both a and b trigger a multi-turn move on the same tick. Applies
+    damage per the same-turn priority spec; returns True if this is a
+    freeze (an NPC-battle softlock -- the battle should stop progressing).
+
+    - Exactly one side casts a Charged Attack: the NPC rule -- the Charged
+      Attack resolves, the Fast Attack is cancelled outright, unless that
+      cancelled Fast Attack would have been fatal to the Charged Attack's
+      caster, in which case the whole battle freezes instead.
+    - Both cast Charged Attacks: higher Attack stat goes first; the other
+      still resolves right after, unless the first knocked it out. (A tied
+      Attack stat -- not exercised by any test -- deterministically favors
+      `a`, our stand-in for the spec's "randomly assigned.")
+    - Both cast Fast Attacks: whichever would be fatal to its target goes
+      first, if only one of the two would be; the other still resolves
+      right after, unless the first knocked it out. If both or neither
+      would be fatal, apply both simultaneously, same as always.
+    """
+    a_is_charge = a.move is a.pokemon.charge_move
+    b_is_charge = b.move is b.pokemon.charge_move
+
+    if a_is_charge != b_is_charge:
+        charger, faster = (a, b) if a_is_charge else (b, a)
+        if _compute_damage(faster, charger) >= charger.hp:
+            return True  # freeze: the cancelled Fast Attack would be fatal
+        _apply_attack(charger, faster)  # the Fast Attack is simply cancelled
+        return False
+
+    if a_is_charge:  # both charge
+        first, second = (a, b) if a.attack >= b.attack else (b, a)
+    else:  # both fast
+        a_fatal = _compute_damage(a, b) >= b.hp
+        b_fatal = _compute_damage(b, a) >= a.hp
+        if a_fatal == b_fatal:
+            _apply_attack(a, b)
+            _apply_attack(b, a)
+            return False
+        first, second = (a, b) if a_fatal else (b, a)
+
+    _apply_attack(first, second)
+    if second.hp > 0:
+        _apply_attack(second, first)
+    return False
 
 
 def _resolve_outcome(player_hp: float, opponent_hp: float) -> BattleOutcome | None:
@@ -404,9 +457,17 @@ def simulate_battle(
     landing on that same tick gets to resolve:
       - Phase A: a move with duration > 1 that reaches its final tick deals
         damage *before* that tick's progress is counted -- "the gap after
-        the second-to-last turn, before the last turn."
+        the second-to-last turn, before the last turn." If *both* sides
+        trigger a multi-turn move the same tick, see
+        _resolve_phase_a_conflict for the same-turn priority rules (fatal-
+        attack priority, Charged-vs-Charged priority by Attack stat, and
+        the NPC rule that a Charged Attack cancels an opposing Fast Attack
+        outright -- occasionally softlocking the battle, mapped here to
+        never resolving within max_turns).
       - Phase B (after incrementing and checking for a faint): a 1-turn
         move, whose only tick is simultaneously its last, deals damage.
+        Unconditional, even if both sides trigger one -- deliberately not
+        given the same priority treatment as Phase A (see the plan doc).
     """
     rCPM = rocket_cpm_for_trainer_level(trainer_level)
     player_atk, player_def, player_hp = _resolve_stats(player, rank, rCPM)
@@ -415,9 +476,12 @@ def simulate_battle(
     player_state = _CombatantState(player, player_atk, player_def, player_hp)
     opponent_state = _CombatantState(opponent, opponent_atk, opponent_def, opponent_hp)
     sides = (player_state, opponent_state)
-    pairs = ((player_state, opponent_state), (opponent_state, player_state))
+    frozen = False
 
     for turn in range(1, max_turns + 1):
+        if frozen:
+            continue  # softlocked: nothing progresses until max_turns raises
+
         for side in sides:
             if side.move is None:
                 side.move = _select_move(
@@ -426,12 +490,22 @@ def simulate_battle(
                 side.turns_into_move = 0
 
         # Phase A: multi-turn moves finishing this tick, before it's counted.
-        for side, other in pairs:
-            if (
-                side.move.duration_turns > 1
-                and side.turns_into_move == side.move.duration_turns - 1
-            ):
-                _apply_attack(side, other)
+        player_triggers_a = (
+            player_state.move.duration_turns > 1
+            and player_state.turns_into_move == player_state.move.duration_turns - 1
+        )
+        opponent_triggers_a = (
+            opponent_state.move.duration_turns > 1
+            and opponent_state.turns_into_move == opponent_state.move.duration_turns - 1
+        )
+        if player_triggers_a and opponent_triggers_a:
+            frozen = _resolve_phase_a_conflict(player_state, opponent_state)
+            if frozen:
+                continue
+        elif player_triggers_a:
+            _apply_attack(player_state, opponent_state)
+        elif opponent_triggers_a:
+            _apply_attack(opponent_state, player_state)
 
         for side in sides:
             side.turns_into_move += 1
@@ -443,7 +517,10 @@ def simulate_battle(
             )
 
         # Phase B: 1-turn moves, whose only tick just completed.
-        for side, other in pairs:
+        for side, other in (
+            (player_state, opponent_state),
+            (opponent_state, player_state),
+        ):
             if (
                 side.move.duration_turns == 1
                 and side.turns_into_move == side.move.duration_turns

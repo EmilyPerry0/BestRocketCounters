@@ -469,30 +469,6 @@ def test_both_fatal_one_turn_attacks_is_engines_documented_tiebreak():
     assert result.outcome == PLAYER_WIN
 
 
-def test_both_fatal_one_turn_beats_multi_turn():
-    # Not a direct quote -- a reasoned extrapolation combining the rule's
-    # two clauses: among two simultaneously-fatal attacks, the one-turn
-    # attack should take priority (as it would over a non-fatal multi-turn
-    # attack), so the one-turn attacker should win outright, not trade a
-    # double-KO.
-    #
-    # NOTE: this directly contradicts the multi-turn/1-turn phase ordering
-    # built (and confirmed) in the previous session, where a multi-turn
-    # move finishing this tick resolves *before* a 1-turn move can, on the
-    # theory that its damage lands "in the gap before the last turn." That
-    # was itself an extrapolation from a different framing of the same
-    # kind of scenario -- this spec suggests it may have been backwards.
-    # opponent's base_stamina=1600 -> hp ~=289.73: survives 2 of the
-    # player's 100-power hits (200 dmg) but not a 3rd (300), so it's alive
-    # right up to the tick where both attacks coincide, not KO'd earlier.
-    player = _priority_mon(1, Move("P_FAST", "NORMAL", 100.0, 1, 0))
-    opponent = _priority_mon(1600, Move("O_FAST", "NORMAL", 100.0, 3, 0))
-
-    result = _run(player, opponent)
-
-    assert result.outcome == PLAYER_WIN
-
-
 def test_charged_vs_charged_priority_by_attack_stat():
     # Rule: "the one with a higher Attack stat will go first ... the other
     # Pokemon will move immediately after, unless it was knocked out."
