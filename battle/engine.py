@@ -10,6 +10,7 @@ change to support a different AI strategy or a longer battle window.
 
 import math
 from dataclasses import dataclass
+from enum import Enum
 
 from battle.sample_data import (
     CPM_TABLE,
@@ -290,3 +291,171 @@ def simulate_turns(
         opponent, player, num_turns, may_use_charge_move=True
     )
     return BattleResult(player=player_result, opponent=opponent_result)
+
+
+# --- Full battle simulation (fight to a faint, not a fixed window) --------
+
+
+class BattleOutcome(Enum):
+    PLAYER_WIN = "PLAYER_WIN"
+    ROCKET_WIN = "ROCKET_WIN"
+
+
+PLAYER_WIN = BattleOutcome.PLAYER_WIN
+ROCKET_WIN = BattleOutcome.ROCKET_WIN
+
+MAX_BATTLE_TURNS = 600  # ~5 simulated minutes at 500ms/turn
+
+
+@dataclass
+class MatchupResult:
+    outcome: BattleOutcome
+    turns_taken: int
+    player_hp_remaining: int
+    opponent_hp_remaining: int
+
+
+def _resolve_stats(pokemon, rank: float, rCPM: float) -> tuple[float, float, int]:
+    """A Pokemon's (attack, defense, hp) via whichever formula actually
+    applies to it: the Rocket formula (rank/rCPM aware) for a Shadow
+    Pokemon, the standard player formula otherwise. This is what lets
+    simulate_battle generalize to any player-vs-Rocket matchup."""
+    if pokemon.is_shadow:
+        return (
+            rocket_effective_attack(pokemon, rank, rCPM),
+            rocket_effective_defense(pokemon, rank, rCPM),
+            rocket_effective_hp(pokemon, rank, rCPM),
+        )
+    return effective_attack(pokemon), effective_defense(pokemon), effective_hp(pokemon)
+
+
+def _damage_from_stats(
+    power: float,
+    move_type: str,
+    attacker_types: list[str],
+    atk: float,
+    defense: float,
+    defender_types: list[str],
+) -> int:
+    """The same formula calculate_damage() uses, but taking already-resolved
+    atk/def instead of deriving them from a Pokemon -- needed because the
+    two sides of a Rocket battle use different stat formulas (see
+    _resolve_stats)."""
+    stab = SAME_TYPE_ATTACK_BONUS_MULTIPLIER if move_type in attacker_types else 1.0
+    effectiveness = type_effectiveness(move_type, defender_types)
+    return math.floor(0.5 * power * (atk / defense) * stab * effectiveness) + 1
+
+
+@dataclass
+class _CombatantState:
+    pokemon: object
+    attack: float
+    defense: float
+    hp: float
+    energy: int = 0
+    move: object = None
+    turns_into_move: int = 0
+
+
+def _apply_attack(attacker: "_CombatantState", defender: "_CombatantState") -> None:
+    move = attacker.move
+    damage = _damage_from_stats(
+        move.power,
+        move.type,
+        attacker.pokemon.types,
+        attacker.attack,
+        defender.defense,
+        defender.pokemon.types,
+    )
+    defender.hp -= damage
+    attacker.energy = max(0, min(MAX_ENERGY, attacker.energy + move.energy_delta))
+
+
+def _resolve_outcome(player_hp: float, opponent_hp: float) -> BattleOutcome | None:
+    player_down = player_hp <= 0
+    opponent_down = opponent_hp <= 0
+    if not player_down and not opponent_down:
+        return None
+    if player_down and opponent_down:
+        return PLAYER_WIN  # simultaneous KO: the player acted first
+    return PLAYER_WIN if opponent_down else ROCKET_WIN
+
+
+def simulate_battle(
+    player,
+    opponent,
+    rank: float = ROCKET_RANK_GRUNT,
+    trainer_level: int = DEFAULT_TRAINER_LEVEL,
+    max_turns: int = MAX_BATTLE_TURNS,
+) -> MatchupResult:
+    """Simulate a full battle, turn by turn (500ms each), until one side
+    faints. Both sides freely use their fast or charge move (greedy: charge
+    the instant it's affordable) -- there's no opponent-slot gating here,
+    that's specific to simulate_turns' Rocket-lineup context.
+
+    `player` is never Shadow; `opponent` is always Shadow, and its stats
+    come from the Rocket formula, keyed by `rank` and `trainer_level`
+    (defaulting to a Grunt at max trainer level).
+
+    Damage timing has two ordered phases each tick, so a multi-turn move
+    finishing this tick can knock out a Pokemon before a 1-turn move
+    landing on that same tick gets to resolve:
+      - Phase A: a move with duration > 1 that reaches its final tick deals
+        damage *before* that tick's progress is counted -- "the gap after
+        the second-to-last turn, before the last turn."
+      - Phase B (after incrementing and checking for a faint): a 1-turn
+        move, whose only tick is simultaneously its last, deals damage.
+    """
+    rCPM = rocket_cpm_for_trainer_level(trainer_level)
+    player_atk, player_def, player_hp = _resolve_stats(player, rank, rCPM)
+    opponent_atk, opponent_def, opponent_hp = _resolve_stats(opponent, rank, rCPM)
+
+    player_state = _CombatantState(player, player_atk, player_def, player_hp)
+    opponent_state = _CombatantState(opponent, opponent_atk, opponent_def, opponent_hp)
+    sides = (player_state, opponent_state)
+    pairs = ((player_state, opponent_state), (opponent_state, player_state))
+
+    for turn in range(1, max_turns + 1):
+        for side in sides:
+            if side.move is None:
+                side.move = _select_move(
+                    side.pokemon, side.energy, may_use_charge_move=True
+                )
+                side.turns_into_move = 0
+
+        # Phase A: multi-turn moves finishing this tick, before it's counted.
+        for side, other in pairs:
+            if (
+                side.move.duration_turns > 1
+                and side.turns_into_move == side.move.duration_turns - 1
+            ):
+                _apply_attack(side, other)
+
+        for side in sides:
+            side.turns_into_move += 1
+
+        outcome = _resolve_outcome(player_state.hp, opponent_state.hp)
+        if outcome is not None:
+            return MatchupResult(
+                outcome, turn, max(player_state.hp, 0), max(opponent_state.hp, 0)
+            )
+
+        # Phase B: 1-turn moves, whose only tick just completed.
+        for side, other in pairs:
+            if (
+                side.move.duration_turns == 1
+                and side.turns_into_move == side.move.duration_turns
+            ):
+                _apply_attack(side, other)
+
+        outcome = _resolve_outcome(player_state.hp, opponent_state.hp)
+        if outcome is not None:
+            return MatchupResult(
+                outcome, turn, max(player_state.hp, 0), max(opponent_state.hp, 0)
+            )
+
+        for side in sides:
+            if side.turns_into_move >= side.move.duration_turns:
+                side.move = None
+
+    raise RuntimeError(f"battle did not resolve within {max_turns} turns")
