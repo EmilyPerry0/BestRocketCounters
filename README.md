@@ -1,6 +1,20 @@
 # BestRocketCounters
 this project aims to find the best counters for efficienty defeating team go rocket members in pokemon go.
 
+## Development Setup
+
+```
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Then run the tests:
+
+```
+pytest tests/test_battle.py -v
+```
+
 ## Data Sources
 
 - Pokemon Game Master data is synced from [PokeMiners/game_masters](https://github.com/PokeMiners/game_masters).
