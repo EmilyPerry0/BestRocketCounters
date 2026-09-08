@@ -10,6 +10,7 @@ from battle.engine import (
     PLAYER_WIN,
     ROCKET_RANK_GIOVANNI,
     ROCKET_RANK_GRUNT,
+    ROCKET_RANK_LEADER,
     ROCKET_WIN,
     calculate_damage,
     effective_attack,
@@ -585,3 +586,210 @@ def test_cancelled_fatal_fast_attack_freezes_the_battle():
 
     with pytest.raises(RuntimeError):
         _run(player, opponent)
+
+
+# --- 15. Protect Shields ------------------------------------------------
+#
+# The Protect Shield mechanic does not exist anywhere in battle/engine.py
+# today -- these tests are written against an *assumed* extension:
+# simulate_battle(..., player_shields=0, opponent_shields=0) and two new
+# MatchupResult fields, player_shields_used/opponent_shields_used, where
+# a shielded Charged Attack deals a fixed 1 damage instead of its real
+# computed damage. All 6 are expected to fail today (most likely a
+# TypeError for the unrecognized keyword arguments) -- per the standing
+# "write a unit test" rule, that's expected, not a bug to fix here.
+#
+# Real-game rules, verified via web search (not in data/latest.json --
+# this is battle-UI behavior, not Game Master data):
+#   - The player has exactly 2 Protect Shields per Rocket encounter.
+#   - Grunts never use their Protect Shields. Leaders and Giovanni do:
+#     they always block the Trainer's first two Charged Attacks.
+#   - A shielded Charged Attack deals exactly 1 damage, regardless of the
+#     move's real power.
+# Sources: https://bulbapedia.bulbagarden.net/wiki/Team_GO_Rocket_Grunt_%28Trainer_class%29 ,
+# https://pokemongohub.net/post/tips-and-tricks/go-hub-guide-to-team-go-rocket-battles/ ,
+# https://www.pokemon.com/us/strategy/master-charged-attacks-and-fast-attacks-in-the-go-battle-league
+#
+# All fixtures here reuse base_attack=base_defense=100 (the _priority_mon
+# default) on both sides, type NORMAL throughout (STAB always applies,
+# effectiveness always neutral) -- but note _priority_mon sets
+# is_shadow=True on *both* sides, so damage actually goes through the
+# Rocket attack/defense formula, not a flat 100/100 shortcut. Verified
+# directly by calling the real engine functions: the attack/defense
+# *ratio* (and so unshielded damage) is identical at every rank (rank
+# and rCPM cancel out of it) -- only HP scales with rank. A power-1 Fast
+# Attack deals 1 damage, a power-100 Charged Attack deals 100 unshielded,
+# and a power-1000 one deals 997 unshielded, at every rank.
+#
+# A side alternating this fast/charge pair fires a Charged Attack every
+# 3rd turn (turns 3, 6, 9, ...), with exactly 2 Fast Attacks landing in
+# between each.
+_SHIELD_FAST = Move("FAST", "NORMAL", 1.0, 1, 50)  # 2 hits = 100 energy
+_SHIELD_CHARGE = Move("CHARGE", "NORMAL", 100.0, 1, -100)  # needs exactly 100
+
+
+def test_player_shields_first_two_opponent_charge_attacks_not_a_third():
+    # GRUNT rank. Opponent alternates fast/charge (base_stamina=1000,
+    # irrelevant HP -- just needs to survive); player is a pure tank
+    # (base_stamina=400, HP 74.45079831) with a never-affordable charge
+    # move, isolating the test to just the opponent's charge stream.
+    # Cumulative damage to the player: turns 1-2 chip (2), turn 3
+    # shielded charge (+1=3), turns 4-5 chip (+2=5), turn 6 shielded
+    # charge (+1=6), turns 7-8 chip (+2=8), turn 9's 3rd charge -- shields
+    # exhausted -- lands unshielded (+100=108), fatal (> 74.45).
+    player = _priority_mon(400, _SHIELD_FAST, _NEVER_AFFORDABLE)
+    opponent = _priority_mon(1000, _SHIELD_FAST, _SHIELD_CHARGE)
+
+    result = simulate_battle(
+        player,
+        opponent,
+        rank=_PRIORITY_RANK,
+        trainer_level=_PRIORITY_LEVEL,
+        player_shields=2,
+    )
+
+    assert result.outcome == ROCKET_WIN
+    assert result.turns_taken == 9
+    assert result.player_shields_used == 2
+    assert result.player_hp_remaining == 0
+
+
+def test_first_opponent_charge_attack_is_shielded():
+    # GRUNT rank. Player is the tank (base_stamina=1000, HP 182.09050671)
+    # with a never-affordable charge move; opponent alternates fast/charge
+    # but with base_stamina=5 (HP 3.58799028), so it's the one who faints
+    # -- purely from the player's own ongoing Fast Attack chip damage
+    # (1/turn), independent of shields -- right after landing its *one*
+    # Charged Attack (turn 3) and taking one more chip hit (turn 4):
+    # cumulative damage to the opponent is 4 by turn 4 (> 3.588), fatal.
+    # It faints before its energy ever reaches 100 again (next charge
+    # would be turn 6), so exactly one Charged Attack ever occurs --
+    # letting the player's resulting HP unambiguously prove whether that
+    # one attack was shielded.
+    player = _priority_mon(1000, _SHIELD_FAST, _NEVER_AFFORDABLE)
+    opponent = _priority_mon(5, _SHIELD_FAST, _SHIELD_CHARGE)
+
+    result = simulate_battle(
+        player,
+        opponent,
+        rank=_PRIORITY_RANK,
+        trainer_level=_PRIORITY_LEVEL,
+        player_shields=2,
+    )
+
+    assert result.outcome == PLAYER_WIN
+    assert result.turns_taken == 4
+    assert result.player_shields_used == 1
+    # 2 chip + 1 shielded charge + 1 more chip = 4 -- would be 103 if
+    # that first attack had landed unshielded instead.
+    assert result.player_hp_remaining == pytest.approx(182.09050671 - 4)
+
+
+def test_grunt_opponent_never_shields_even_after_three_player_charge_attacks():
+    # Mirror of the first test with roles swapped: the *player* alternates
+    # fast/charge (base_stamina=1000); the *opponent* is the tank,
+    # base_stamina=1350 (GRUNT HP 244.88033661), never-affordable charge
+    # move. opponent_shields=2 is deliberately passed (not 0) so this
+    # proves the real rule -- Grunts *choose* never to shield -- rather
+    # than trivially passing because none were available.
+    # Cumulative damage to the opponent (all 3 unshielded, since Grunts
+    # never shield): turns 1-2 chip (2), turn 3 charge (+100=102), turns
+    # 4-5 chip (+2=104), turn 6 charge (+100=204), turns 7-8 chip
+    # (+2=206), turn 9's 3rd charge (+100=306) -- fatal (> 244.88).
+    player = _priority_mon(1000, _SHIELD_FAST, _SHIELD_CHARGE)
+    opponent = _priority_mon(1350, _SHIELD_FAST, _NEVER_AFFORDABLE)
+
+    result = simulate_battle(
+        player,
+        opponent,
+        rank=ROCKET_RANK_GRUNT,
+        trainer_level=_PRIORITY_LEVEL,
+        opponent_shields=2,
+    )
+
+    assert result.outcome == PLAYER_WIN
+    assert result.turns_taken == 9
+    assert result.opponent_shields_used == 0
+    assert result.opponent_hp_remaining == 0
+
+
+def test_shielded_charge_attack_deals_exactly_one_damage():
+    # Same shape/timing as test_first_opponent_charge_attack_is_shielded,
+    # but the opponent's charge move here is deliberately huge (997
+    # damage unshielded) to make the point unmistakable: no matter how
+    # strong the move, a shielded hit is still capped at exactly 1, not
+    # some fraction of it.
+    big_charge = Move("BIG_CHARGE", "NORMAL", 1000.0, 1, -100)
+    player = _priority_mon(1000, _SHIELD_FAST, _NEVER_AFFORDABLE)
+    opponent = _priority_mon(5, _SHIELD_FAST, big_charge)
+
+    result = simulate_battle(
+        player,
+        opponent,
+        rank=_PRIORITY_RANK,
+        trainer_level=_PRIORITY_LEVEL,
+        player_shields=2,
+    )
+
+    assert result.outcome == PLAYER_WIN
+    assert result.turns_taken == 4
+    assert result.player_shields_used == 1
+    # Would be ~1000 total damage taken, not 4, at the move's real power.
+    assert result.player_hp_remaining == pytest.approx(182.09050671 - 4)
+
+
+def test_leader_opponent_shields_first_two_player_charge_attacks_not_a_third():
+    # Mirror of the first shield test's exact shape/numbers, but roles
+    # swapped (player attacks, opponent/Leader tanks and shields) and
+    # rank is LEADER, not GRUNT: player alternates fast/charge
+    # (base_stamina=1000, LEADER HP 191.19503205, comfortably survives);
+    # opponent is the tank, base_stamina=400 (LEADER HP 78.17333823),
+    # never-affordable charge move, opponent_shields=2. Cumulative damage
+    # to the opponent mirrors the first test's player-side math (2
+    # shielded charges + chip, then the 3rd lands unshielded at turn 9
+    # for +100=108), fatal against 78.17.
+    player = _priority_mon(1000, _SHIELD_FAST, _SHIELD_CHARGE)
+    opponent = _priority_mon(400, _SHIELD_FAST, _NEVER_AFFORDABLE)
+
+    result = simulate_battle(
+        player,
+        opponent,
+        rank=ROCKET_RANK_LEADER,
+        trainer_level=_PRIORITY_LEVEL,
+        opponent_shields=2,
+    )
+
+    assert result.outcome == PLAYER_WIN
+    assert result.turns_taken == 9
+    assert result.opponent_shields_used == 2
+    assert result.opponent_hp_remaining == 0
+
+
+def test_leader_fight_uses_at_most_four_shields_total():
+    # Both sides alternate fast/charge against each other (symmetric
+    # fixture, base_stamina=400 each, LEADER HP 78.17333823 each).
+    # Every Charged Attack (turns 3, 6, 9) lands on both sides
+    # simultaneously (Phase B has no cross-side priority): both shield
+    # turns 3 and 6 (1 damage each), both shields are exhausted by turn
+    # 9, so turn 9's mutual Charged Attacks land unshielded (100 each) on
+    # both sides simultaneously -- cumulative damage to each side is 108
+    # by turn 9, exceeding 78.17 for both: a simultaneous double-KO,
+    # which the engine's own documented tiebreak resolves as PLAYER_WIN.
+    player = _priority_mon(400, _SHIELD_FAST, _SHIELD_CHARGE)
+    opponent = _priority_mon(400, _SHIELD_FAST, _SHIELD_CHARGE)
+
+    result = simulate_battle(
+        player,
+        opponent,
+        rank=ROCKET_RANK_LEADER,
+        trainer_level=_PRIORITY_LEVEL,
+        player_shields=2,
+        opponent_shields=2,
+    )
+
+    assert result.outcome == PLAYER_WIN
+    assert result.turns_taken == 9
+    assert result.player_shields_used == 2
+    assert result.opponent_shields_used == 2
+    assert result.player_hp_remaining == 0
+    assert result.opponent_hp_remaining == 0
