@@ -1,0 +1,101 @@
+{
+  "target": {
+    "species": "TEDDIURSA",
+    "rank": "GRUNT",
+    "trainer_level": 80,
+    "movesets_evaluated": 10
+  },
+  "candidate_level": 50,
+  "top_counters": [
+    {
+      "species": "KELDEO",
+      "display_name": "KELDEO",
+      "fast_move": "LOW_KICK_FAST",
+      "charge_move": "SACRED_SWORD",
+      "wins": 10,
+      "movesets_evaluated": 10,
+      "average_turns_taken": 9.0
+    },
+    {
+      "species": "TERRAKION",
+      "display_name": "TERRAKION",
+      "fast_move": "DOUBLE_KICK_FAST",
+      "charge_move": "SACRED_SWORD",
+      "wins": 10,
+      "movesets_evaluated": 10,
+      "average_turns_taken": 10.0
+    },
+    {
+      "species": "URSHIFU",
+      "display_name": "URSHIFU",
+      "fast_move": "COUNTER_FAST",
+      "charge_move": "BRICK_BREAK",
+      "wins": 10,
+      "movesets_evaluated": 10,
+      "average_turns_taken": 11.0
+    },
+    {
+      "species": "MACHAMP",
+      "display_name": "MACHAMP",
+      "fast_move": "KARATE_CHOP_FAST",
+      "charge_move": "SUBMISSION",
+      "wins": 10,
+      "movesets_evaluated": 10,
+      "average_turns_taken": 12.0
+    },
+    {
+      "species": "HERACROSS",
+      "display_name": "HERACROSS",
+      "fast_move": "COUNTER_FAST",
+      "charge_move": "UPPER_HAND",
+      "wins": 10,
+      "movesets_evaluated": 10,
+      "average_turns_taken": 12.0
+    },
+    {
+      "species": "RAIKOU",
+      "display_name": "RAIKOU",
+      "fast_move": "THUNDER_SHOCK_FAST",
+      "charge_move": "AURA_SPHERE",
+      "wins": 10,
+      "movesets_evaluated": 10,
+      "average_turns_taken": 12.0
+    },
+    {
+      "species": "MIENSHAO",
+      "display_name": "MIENSHAO",
+      "fast_move": "LOW_KICK_FAST",
+      "charge_move": "BRICK_BREAK",
+      "wins": 10,
+      "movesets_evaluated": 10,
+      "average_turns_taken": 12.0
+    },
+    {
+      "species": "DECIDUEYE",
+      "display_name": "DECIDUEYE_HISUIAN",
+      "fast_move": "PSYCHO_CUT_FAST",
+      "charge_move": "AURA_SPHERE",
+      "wins": 10,
+      "movesets_evaluated": 10,
+      "average_turns_taken": 12.0
+    },
+    {
+      "species": "BUZZWOLE",
+      "display_name": "BUZZWOLE",
+      "fast_move": "COUNTER_FAST",
+      "charge_move": "POWER_UP_PUNCH",
+      "wins": 10,
+      "movesets_evaluated": 10,
+      "average_turns_taken": 12.0
+    },
+    {
+      "species": "ENAMORUS",
+      "display_name": "ENAMORUS",
+      "fast_move": "FAIRY_WIND_FAST",
+      "charge_move": "FLY",
+      "wins": 10,
+      "movesets_evaluated": 10,
+      "average_turns_taken": 12.0
+    }
+  ]
+}
