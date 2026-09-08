@@ -77,6 +77,51 @@ def test_type_effectiveness_lookup(move_type, defender_types, expected):
     assert type_effectiveness(move_type, defender_types) == pytest.approx(expected)
 
 
+# Lucario (FIGHTING/STEEL) against all 18 attacking types -- a dual-type
+# defender's effectiveness is the product of each of its own types'
+# effectiveness against the move, so Lucario's Steel typing turns what
+# would otherwise be several neutral matchups (vs. NORMAL alone, say)
+# into resisted ones, and stacks with Fighting's own resistances/
+# weaknesses for the doubly-resisted (BUG/POISON/ROCK) and neutral
+# (FLYING/PSYCHIC/FAIRY, where a Fighting weakness and a Steel resistance
+# exactly cancel out) cases. Every value here is hand-verified against
+# TYPE_CHART/TYPE_ORDER in battle/sample_data.py.
+LUCARIO_TYPES = player_lucario().types  # ["FIGHTING", "STEEL"]
+
+
+@pytest.mark.parametrize(
+    "move_type, expected_multiplier",
+    [
+        # Super effective (160%)
+        ("FIGHTING", 1.6),
+        ("FIRE", 1.6),
+        ("GROUND", 1.6),
+        # Resisted (62.5%)
+        ("STEEL", 0.625),
+        ("NORMAL", 0.625),
+        ("ICE", 0.625),
+        ("GRASS", 0.625),
+        ("DRAGON", 0.625),
+        ("DARK", 0.625),
+        # Doubly resisted (39.1%)
+        ("BUG", 0.390625),
+        ("POISON", 0.390625),
+        ("ROCK", 0.390625),
+        # Regular/neutral (100%) -- every other attacking type
+        ("FLYING", 1.0),
+        ("WATER", 1.0),
+        ("ELECTRIC", 1.0),
+        ("PSYCHIC", 1.0),
+        ("GHOST", 1.0),
+        ("FAIRY", 1.0),
+    ],
+)
+def test_type_effectiveness_against_dual_type_lucario(move_type, expected_multiplier):
+    assert type_effectiveness(move_type, LUCARIO_TYPES) == pytest.approx(
+        expected_multiplier
+    )
+
+
 # --- 3. STAB applies only when the move's type matches the attacker's ------
 
 
