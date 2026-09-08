@@ -8,6 +8,8 @@ for a single hit, and _simulate_side is the one piece that would need to
 change to support a different AI strategy or a longer battle window.
 """
 
+from __future__ import annotations
+
 import math
 from dataclasses import dataclass
 from enum import Enum
@@ -357,7 +359,7 @@ class _CombatantState:
     turns_into_move: int = 0
 
 
-def _apply_attack(attacker: "_CombatantState", defender: "_CombatantState") -> None:
+def _apply_attack(attacker: _CombatantState, defender: _CombatantState) -> None:
     move = attacker.move
     damage = _damage_from_stats(
         move.power,
