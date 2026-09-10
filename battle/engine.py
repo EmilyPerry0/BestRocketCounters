@@ -315,6 +315,8 @@ class MatchupResult:
     turns_taken: int
     player_hp_remaining: int
     opponent_hp_remaining: int
+    player_shields_used: int = 0
+    opponent_shields_used: int = 0
 
 
 def _resolve_stats(pokemon, rank: float, rCPM: float) -> tuple[float, float, int]:
@@ -357,6 +359,8 @@ class _CombatantState:
     energy: int = 0
     move: object = None
     turns_into_move: int = 0
+    shields_remaining: int = 0
+    shields_used: int = 0
 
 
 def _compute_damage(attacker: _CombatantState, defender: _CombatantState) -> int:
@@ -375,7 +379,19 @@ def _compute_damage(attacker: _CombatantState, defender: _CombatantState) -> int
 
 
 def _apply_attack(attacker: _CombatantState, defender: _CombatantState) -> None:
-    defender.hp -= _compute_damage(attacker, defender)
+    """Applies attacker's current move to defender, including the Protect
+    Shield mechanic: a Charged Attack against a defender with a shield
+    left is blocked down to a flat 1 damage (the same guaranteed-minimum
+    every hit already has) instead of its real computed damage. Fast
+    Attacks are never shielded -- only a side's own charge_move counts."""
+    is_charge_attack = attacker.move is attacker.pokemon.charge_move
+    if is_charge_attack and defender.shields_remaining > 0:
+        damage = 1
+        defender.shields_remaining -= 1
+        defender.shields_used += 1
+    else:
+        damage = _compute_damage(attacker, defender)
+    defender.hp -= damage
     attacker.energy = max(
         0, min(MAX_ENERGY, attacker.energy + attacker.move.energy_delta)
     )
@@ -442,6 +458,8 @@ def simulate_battle(
     rank: float = ROCKET_RANK_GRUNT,
     trainer_level: int = DEFAULT_TRAINER_LEVEL,
     max_turns: int = MAX_BATTLE_TURNS,
+    player_shields: int = 0,
+    opponent_shields: int = 0,
 ) -> MatchupResult:
     """Simulate a full battle, turn by turn (500ms each), until one side
     faints. Both sides freely use their fast or charge move (greedy: charge
@@ -451,6 +469,14 @@ def simulate_battle(
     `player` is never Shadow; `opponent` is always Shadow, and its stats
     come from the Rocket formula, keyed by `rank` and `trainer_level`
     (defaulting to a Grunt at max trainer level).
+
+    `player_shields`/`opponent_shields` are each side's Protect Shield
+    count (0 by default, matching every caller that doesn't care about
+    the mechanic). A shield blocks a Charged Attack down to 1 damage --
+    see _apply_attack. Grunts never use their shields in the real game
+    even though the player always brings 2, so `opponent_shields` is only
+    honored when `rank` isn't ROCKET_RANK_GRUNT; a Grunt opponent's
+    effective shield count is always 0 regardless of what's passed in.
 
     Damage timing has two ordered phases each tick, so a multi-turn move
     finishing this tick can knock out a Pokemon before a 1-turn move
@@ -473,8 +499,19 @@ def simulate_battle(
     player_atk, player_def, player_hp = _resolve_stats(player, rank, rCPM)
     opponent_atk, opponent_def, opponent_hp = _resolve_stats(opponent, rank, rCPM)
 
-    player_state = _CombatantState(player, player_atk, player_def, player_hp)
-    opponent_state = _CombatantState(opponent, opponent_atk, opponent_def, opponent_hp)
+    # Grunts never shield, regardless of how many they're "given" here.
+    effective_opponent_shields = 0 if rank == ROCKET_RANK_GRUNT else opponent_shields
+
+    player_state = _CombatantState(
+        player, player_atk, player_def, player_hp, shields_remaining=player_shields
+    )
+    opponent_state = _CombatantState(
+        opponent,
+        opponent_atk,
+        opponent_def,
+        opponent_hp,
+        shields_remaining=effective_opponent_shields,
+    )
     sides = (player_state, opponent_state)
     frozen = False
 
@@ -513,7 +550,12 @@ def simulate_battle(
         outcome = _resolve_outcome(player_state.hp, opponent_state.hp)
         if outcome is not None:
             return MatchupResult(
-                outcome, turn, max(player_state.hp, 0), max(opponent_state.hp, 0)
+                outcome,
+                turn,
+                max(player_state.hp, 0),
+                max(opponent_state.hp, 0),
+                player_state.shields_used,
+                opponent_state.shields_used,
             )
 
         # Phase B: 1-turn moves, whose only tick just completed.
@@ -530,7 +572,12 @@ def simulate_battle(
         outcome = _resolve_outcome(player_state.hp, opponent_state.hp)
         if outcome is not None:
             return MatchupResult(
-                outcome, turn, max(player_state.hp, 0), max(opponent_state.hp, 0)
+                outcome,
+                turn,
+                max(player_state.hp, 0),
+                max(opponent_state.hp, 0),
+                player_state.shields_used,
+                opponent_state.shields_used,
             )
 
         for side in sides:
