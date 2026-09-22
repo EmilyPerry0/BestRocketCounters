@@ -4,6 +4,8 @@ See /Users/emily/.claude/plans/dynamic-painting-widget.md for the full
 design and where each expected number came from.
 """
 
+import math
+
 import pytest
 
 from battle.engine import (
@@ -27,6 +29,7 @@ from battle.sample_data import (
     LOCK_ON_FAST,
     OPPONENTS,
     RETURN,
+    SAME_TYPE_ATTACK_BONUS_MULTIPLIER,
     non_shadow_persian,
     player_excadrill,
     player_lucario,
@@ -793,3 +796,54 @@ def test_leader_fight_uses_at_most_four_shields_total():
     assert result.opponent_shields_used == 2
     assert result.player_hp_remaining == 0
     assert result.opponent_hp_remaining == 0
+
+
+# --- 16. Damage formula fidelity --------------------------------------------
+#
+# damage = floor(0.5 * power * (Attack/Defense) * STAB * Effectiveness) + 1
+#
+# Reconstructed here from already-independently-tested building blocks
+# (effective_attack/effective_defense: test 1; type_effectiveness: test 2)
+# rather than just calling calculate_damage() and comparing it to itself --
+# so this actually verifies calculate_damage() implements this exact
+# formula, rather than trivially matching whatever it happens to return.
+# Real fixtures, chosen to cover a spread of STAB on/off and every
+# effectiveness tier this session has verified against the real chart
+# (1.6/1.0/0.625/0.390625).
+
+
+def _expected_damage(attacker, defender, move):
+    stab = SAME_TYPE_ATTACK_BONUS_MULTIPLIER if move.type in attacker.types else 1.0
+    effectiveness = type_effectiveness(move.type, defender.types)
+    raw = (
+        0.5
+        * move.power
+        * (effective_attack(attacker) / effective_defense(defender))
+        * stab
+        * effectiveness
+    )
+    return math.floor(raw) + 1
+
+
+@pytest.mark.parametrize(
+    "attacker, defender",
+    [
+        # STAB (NORMAL Scratch on a NORMAL attacker), neutral (1.0) vs NORMAL.
+        (shadow_persian(), shadow_kangaskhan()),
+        # STAB (FIGHTING Counter on a FIGHTING attacker), super effective
+        # (1.6) vs NORMAL.
+        (player_lucario(), shadow_persian()),
+        # No STAB (STEEL Bullet Punch on a FIGHTING-only attacker), resisted
+        # (0.625) vs GROUND/STEEL.
+        (player_machamp(), player_excadrill()),
+        # STAB (gengar's own GHOST fast move, on a GHOST/POISON attacker),
+        # doubly resisted (0.390625) vs NORMAL.
+        (shadow_gengar(), shadow_persian()),
+    ],
+    ids=["stab-neutral", "stab-super-effective", "no-stab-resisted", "stab-doubly-resisted"],
+)
+def test_calculate_damage_matches_the_documented_formula(attacker, defender):
+    move = attacker.fast_move
+    assert calculate_damage(attacker, defender, move) == _expected_damage(
+        attacker, defender, move
+    )
