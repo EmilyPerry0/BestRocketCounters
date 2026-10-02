@@ -46,11 +46,11 @@
         ],
         "thirdPokemon": [
             {
-                "name": "Reshiram",
-                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm643.icon.png",
+                "name": "Zekrom",
+                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm644.icon.png",
                 "types": [
                     "dragon",
-                    "fire"
+                    "electric"
                 ],
                 "isEncounter": true,
                 "canBeShiny": true
@@ -63,10 +63,10 @@
         "type": "",
         "firstPokemon": [
             {
-                "name": "Axew",
-                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm610.icon.png",
+                "name": "Cubone",
+                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm104.icon.png",
                 "types": [
-                    "dragon"
+                    "ground"
                 ],
                 "isEncounter": true,
                 "canBeShiny": true
@@ -142,11 +142,11 @@
         "type": "",
         "firstPokemon": [
             {
-                "name": "Tyrunt",
-                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm696.icon.png",
+                "name": "Alolan Grimer",
+                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm88.fALOLA.icon.png",
                 "types": [
-                    "rock",
-                    "dragon"
+                    "poison",
+                    "dark"
                 ],
                 "isEncounter": true,
                 "canBeShiny": true
@@ -222,11 +222,10 @@
         "type": "",
         "firstPokemon": [
             {
-                "name": "Amaura",
-                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm698.icon.png",
+                "name": "Pancham",
+                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm674.icon.png",
                 "types": [
-                    "rock",
-                    "ice"
+                    "fighting"
                 ],
                 "isEncounter": true,
                 "canBeShiny": true
@@ -599,15 +598,6 @@
                 ],
                 "isEncounter": true,
                 "canBeShiny": true
-            },
-            {
-                "name": "Feebas",
-                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm349.icon.png",
-                "types": [
-                    "water"
-                ],
-                "isEncounter": true,
-                "canBeShiny": true
             }
         ],
         "secondPokemon": [
@@ -754,8 +744,8 @@
                 "canBeShiny": true
             },
             {
-                "name": "Treecko",
-                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm252.icon.png",
+                "name": "Fomantis",
+                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm753.icon.png",
                 "types": [
                     "grass"
                 ],
@@ -959,8 +949,8 @@
                 "canBeShiny": true
             },
             {
-                "name": "Machop",
-                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm66.icon.png",
+                "name": "Makuhita",
+                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm296.icon.png",
                 "types": [
                     "fighting"
                 ],
@@ -1447,10 +1437,11 @@
                 "canBeShiny": true
             },
             {
-                "name": "Grubbin",
-                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm736.icon.png",
+                "name": "Wimpod",
+                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm767.icon.png",
                 "types": [
-                    "bug"
+                    "bug",
+                    "water"
                 ],
                 "isEncounter": true,
                 "canBeShiny": true
@@ -1634,11 +1625,11 @@
                 "canBeShiny": true
             },
             {
-                "name": "Gastly",
-                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm92.icon.png",
+                "name": "Sandygast",
+                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm769.icon.png",
                 "types": [
                     "ghost",
-                    "poison"
+                    "ground"
                 ],
                 "isEncounter": true,
                 "canBeShiny": true
@@ -1741,8 +1732,8 @@
                 "canBeShiny": true
             },
             {
-                "name": "Dratini",
-                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm147.icon.png",
+                "name": "Axew",
+                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm610.icon.png",
                 "types": [
                     "dragon"
                 ],
