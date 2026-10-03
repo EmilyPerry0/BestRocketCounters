@@ -598,6 +598,15 @@
                 ],
                 "isEncounter": true,
                 "canBeShiny": true
+            },
+            {
+                "name": "Feebas",
+                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm349.icon.png",
+                "types": [
+                    "water"
+                ],
+                "isEncounter": true,
+                "canBeShiny": true
             }
         ],
         "secondPokemon": [
