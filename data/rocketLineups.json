@@ -687,10 +687,11 @@
                 "canBeShiny": true
             },
             {
-                "name": "Voltorb",
-                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm100.icon.png",
+                "name": "Magnemite",
+                "image": "https://cdn.leekduck.com/assets/img/pokemon_icons_crop/pm81.icon.png",
                 "types": [
-                    "electric"
+                    "electric",
+                    "steel"
                 ],
                 "isEncounter": true,
                 "canBeShiny": true
